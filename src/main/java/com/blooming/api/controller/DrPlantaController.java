@@ -1,6 +1,9 @@
 package com.blooming.api.controller;
 
+import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.service.plantAI.IPlantAIService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,10 +21,21 @@ public class DrPlantaController {
     }
 
     @PostMapping("/img")
-    public ResponseEntity<String> processImg(@RequestParam("img") MultipartFile img) throws IOException {
+    public ResponseEntity<?> processImg(@RequestParam("img") MultipartFile img, HttpServletRequest request) throws IOException {
         byte[] imageBytes = img.getBytes();
-        String result = plantIdService.getResponse(imageBytes);
-        return ResponseEntity.ok(result);
+
+        return new GlobalHandlerResponse().handleResponse(
+                HttpStatus.OK.name(),
+                plantIdService.identifyImage(imageBytes),
+                HttpStatus.OK, request);
+    }
+
+    @GetMapping("/plantSearch")
+    public ResponseEntity<?> getPlantInformationByName(@RequestParam("plantName") String plantName, HttpServletRequest request) {
+        return new GlobalHandlerResponse().handleResponse(
+                HttpStatus.OK.name(),
+                plantIdService.getPlantInformationByName(plantName),
+                HttpStatus.OK, request);
     }
 
 

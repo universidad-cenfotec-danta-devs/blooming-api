@@ -1,5 +1,6 @@
 package com.blooming.api.exception;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.persistence.EntityNotFoundException;
@@ -58,6 +59,14 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(JsonParseException.class)
+    public ResponseEntity<Map<String, String>> handleJsonParseException(JsonParseException ex) {
+        Map<String, String> errorDetails = new HashMap<>();
+        errorDetails.put("error", "Invalid request data. Please ensure all fields are correct and follow the expected format.");
+        logger.error("Parsing error: {}", ex.getMessage());
+        return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(ExpiredJwtException.class)
     public ResponseEntity<Map<String, String>> handleExpiredJwtException(ExpiredJwtException ex) {
         Map<String, String> errorDetails = new HashMap<>();
@@ -65,6 +74,7 @@ public class GlobalExceptionHandler {
         logger.error("Expired JWT error: {}", ex.getMessage());
         return new ResponseEntity<>(errorDetails, HttpStatus.UNAUTHORIZED);
     }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, String>> handleBadCredentialsException(BadCredentialsException ex) {
         Map<String, String> errorDetails = new HashMap<>();
