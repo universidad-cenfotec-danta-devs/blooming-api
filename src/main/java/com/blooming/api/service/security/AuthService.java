@@ -21,12 +21,11 @@ public class AuthService {
         this.userRepository = userRepository;
     }
 
-    public User authenticate(String username, String password) {
+    public User authenticate(String email, String password) {
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password)
+                new UsernamePasswordAuthenticationToken(email, password)
         );
-        //TODO: CAMBIAR A USERSERVICE
-        return userRepository.findByEmail(username)
+        return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 }

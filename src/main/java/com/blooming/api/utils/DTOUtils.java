@@ -20,7 +20,7 @@ public class DTOUtils {
         try {
             JsonNode root = objectMapper.readTree(jsonResponse);
             List<PlantSuggestionDTO> suggestionsList = new ArrayList<>();
-
+            String idAccessToken = root.path("access_token").asText();
             JsonNode suggestions = root.path("result").path("classification").path("suggestions");
             for (JsonNode suggestion : suggestions) {
                 String name = suggestion.path("name").asText();
@@ -35,6 +35,7 @@ public class DTOUtils {
 
                 PlantSuggestionDTO dto = new PlantSuggestionDTO();
                 dto.setName(name);
+                dto.setIdAccessToken(idAccessToken);
                 dto.setProbabilityPercentage(probabilityPercentage);
                 dto.setSimilarityPercentage(similarityPercentage);
                 dto.setImageUrl(imageUrl);
@@ -52,11 +53,12 @@ public class DTOUtils {
     public static Optional<PlantDetailsDTO> parsePlantDetails(String jsonResponse) {
         try {
             JsonNode plantDetailsNode = objectMapper.readTree(jsonResponse);
-            String name = plantDetailsNode.path("name").asText();
-            String watering = plantDetailsNode.path("watering").asText();
-            String bestWatering = plantDetailsNode.path("best_watering").asText();
-            String bestLightCondition = plantDetailsNode.path("best_light_condition").asText();
-            String bestSoilType = plantDetailsNode.path("best_soil_type").asText();
+
+            String name = plantDetailsNode.path("name").isNull() ? null : plantDetailsNode.path("name").asText();
+            String watering = plantDetailsNode.path("watering").isNull() ? null : plantDetailsNode.path("watering").toString();
+            String bestWatering = plantDetailsNode.path("best_watering").isNull() ? null : plantDetailsNode.path("best_watering").asText();
+            String bestLightCondition = plantDetailsNode.path("best_light_condition").isNull() ? null : plantDetailsNode.path("best_light_condition").asText();
+            String bestSoilType = plantDetailsNode.path("best_soil_type").isNull() ? null : plantDetailsNode.path("best_soil_type").asText();
 
             PlantDetailsDTO dto = new PlantDetailsDTO();
             dto.setName(name);

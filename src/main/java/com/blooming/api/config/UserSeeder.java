@@ -17,12 +17,10 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
 
     private final IRoleService roleService;
     private final IUserService userService;
-    private final PasswordEncoder passwordEncoder;
 
     public UserSeeder(IRoleService roleService, IUserService userService, PasswordEncoder passwordEncoder) {
         this.roleService = roleService;
         this.userService = userService;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -39,10 +37,24 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
             roleService.register(userRole);
         }
 
-        if (roleService.findByName(RoleEnum.ADMIN_USER).isEmpty()) {
+        if (roleService.findByName(RoleEnum.SIMPLE_USER).isEmpty()) {
             Role superAdminRole = new Role();
-            superAdminRole.setName(RoleEnum.ADMIN_USER);
-            superAdminRole.setDescription(RoleEnum.ADMIN_USER.name());
+            superAdminRole.setName(RoleEnum.SIMPLE_USER);
+            superAdminRole.setDescription(RoleEnum.SIMPLE_USER.name());
+            roleService.register(superAdminRole);
+        }
+
+        if (roleService.findByName(RoleEnum.NURSERY_USER).isEmpty()) {
+            Role superAdminRole = new Role();
+            superAdminRole.setName(RoleEnum.NURSERY_USER);
+            superAdminRole.setDescription(RoleEnum.NURSERY_USER.name());
+            roleService.register(superAdminRole);
+        }
+
+        if (roleService.findByName(RoleEnum.DESIGNER_USER).isEmpty()) {
+            Role superAdminRole = new Role();
+            superAdminRole.setName(RoleEnum.DESIGNER_USER);
+            superAdminRole.setDescription(RoleEnum.DESIGNER_USER.name());
             roleService.register(superAdminRole);
         }
     }
@@ -64,9 +76,8 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
             return;
         }
         User user1 = new User();
-        user1.setUsername("user1");
         user1.setEmail(USER_EMAIL);
-        user1.setPassword(passwordEncoder.encode("user123"));
+        user1.setPassword("user123");
         user1.setRole(optionalRole.get());
         userService.register(user1, RoleEnum.SIMPLE_USER);
     }
@@ -81,9 +92,8 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
             return;
         }
         User superAdmin = new User();
-        superAdmin.setUsername("admin_user");
         superAdmin.setEmail(ADMIN_USER);
-        superAdmin.setPassword(passwordEncoder.encode("admin"));
+        superAdmin.setPassword("admin");
         superAdmin.setRole(optionalRole.get());
         userService.register(superAdmin, RoleEnum.ADMIN_USER);
 
@@ -99,9 +109,8 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
             return;
         }
         User designerUser = new User();
-        designerUser.setUsername("designer_user");
         designerUser.setEmail(DESIGNER_USER);
-        designerUser.setPassword(passwordEncoder.encode("designer123"));
+        designerUser.setPassword("designer123");
         designerUser.setRole(optionalRole.get());
         userService.register(designerUser, RoleEnum.DESIGNER_USER);
 
@@ -117,9 +126,8 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
             return;
         }
         User nurseryUser = new User();
-        nurseryUser.setUsername("nursery_user");
         nurseryUser.setEmail(NURSERY_USER);
-        nurseryUser.setPassword(passwordEncoder.encode("nursery123"));
+        nurseryUser.setPassword("nursery123");
         nurseryUser.setRole(optionalRole.get());
         userService.register(nurseryUser, RoleEnum.NURSERY_USER);
 

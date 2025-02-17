@@ -3,6 +3,7 @@ package com.blooming.api.service.plantAI;
 import com.blooming.api.response.dto.PlantDetailsDTO;
 import com.blooming.api.response.dto.PlantSuggestionDTO;
 import com.blooming.api.utils.DTOUtils;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,20 +55,68 @@ public class PlantAIService implements IPlantAIService {
 
         return DTOUtils.parsePlantSuggestions(response.getBody())
                 .orElseThrow(() -> new IllegalArgumentException("Error parsing plant suggestion"));
-
     }
 
+
     @Override
-    public PlantDetailsDTO getPlantInformationByName(String plantName) {
-        String tokenPlant = searchPlantByScientificName(plantName)
+    public PlantDetailsDTO getPlantInformationByName(String plantName, String idAccessToken) {
+        String accessTokenForDetails = searchPlantByScientificName(plantName)
                 .orElseThrow(() -> new EntityNotFoundException("Plant not found with scientific name: " + plantName));
         var headers = createHeaders();
         var requestEntity = new HttpEntity<>(headers);
-        String url = apiPlantBaseUrl + tokenPlant + DETAIL_PARAMS;
+        String url = apiPlantBaseUrl + accessTokenForDetails + DETAIL_PARAMS;
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
-        return DTOUtils.parsePlantDetails(response.getBody())
+        PlantDetailsDTO plantDetailsDTO = DTOUtils.parsePlantDetails(response.getBody())
                 .orElseThrow(() -> new IllegalArgumentException("Error parsing plant: " + plantName));
 
+        if (plantDetailsDTO.getWatering() == null) {
+            plantDetailsDTO.setWatering(generateWatering(idAccessToken, headers).orElseThrow(() -> new EntityNotFoundException("Watering not found")));
+        }
+        return plantDetailsDTO;
+    }
+
+    private Optional<String> generateWatering(String accessToken, HttpHeaders headers) {
+        String url = apiIdentifyUrl + "/" + accessToken + "/conversation";
+        String jsonBody = """
+                {
+                    "question": "The watering of this plant is dry(1), medium(2) or wet(3)?",
+                    "prompt": "Return only the values 'min' and 'max' in valid JSON format. No extra text."
+                }
+                """;
+
+        var requestEntity = new HttpEntity<>(jsonBody, headers);
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+            JsonNode jsonNode = getJsonNodeFromResponseBody(response);
+            JsonNode messages = jsonNode.path("messages");
+            String wateringInfo = "";
+
+            for (JsonNode message : messages) {
+                if ("answer".equals(message.path("type").asText())) {
+                    wateringInfo = message.path("content").asText();
+                    break;
+                }
+            }
+
+            return Optional.ofNullable(wateringInfo);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public String generateWateringSchedule(String idAccessToken) {
+        String url = apiIdentifyUrl + "/" + idAccessToken + "/conversation";
+        String jsonBody = """
+                {
+                    "question": "Generate a watering schedule for the next 2 months for this plant, using the watering, bestWatering, bestLightCondition, and bestSoilType values. Only include dates and times",
+                    "prompt": "Only include dates. No extra text. No special characters like asterisks"
+                }
+                """;
+        var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+        JsonNode jsonNode = getJsonNodeFromResponseBody(response);
+        return "";
     }
 
     private Optional<String> searchPlantByScientificName(String plantName) {
@@ -91,6 +140,14 @@ public class PlantAIService implements IPlantAIService {
         }
     }
 
+    private JsonNode getJsonNodeFromResponseBody(ResponseEntity<String> response) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readTree(response.getBody());
+        } catch (Exception e) {
+            throw new RuntimeException("Error parsing response", e);
+        }
+    }
 
     private HttpHeaders createHeaders() {
         return new HttpHeaders() {{

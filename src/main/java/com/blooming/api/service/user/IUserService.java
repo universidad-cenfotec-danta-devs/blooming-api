@@ -8,6 +8,5 @@ import java.util.Optional;
 
 public interface IUserService {
     ResponseEntity<?> register(User user, RoleEnum role);
-
     Optional<User> findByEmail(String email);
 }

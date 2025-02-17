@@ -11,4 +11,5 @@ public class PlantDetailsDTO {
     private String bestWatering;
     private String bestLightCondition;
     private String bestSoilType;
+
 }

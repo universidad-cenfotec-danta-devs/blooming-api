@@ -30,9 +30,6 @@ public class User implements UserDetails {
     private String email;
 
     @Setter
-    private String username;
-
-    @Setter
     @Column(nullable = false)
     private String password;
 
@@ -98,10 +95,8 @@ public class User implements UserDetails {
         return password;
     }
 
-    public User setRole(Role role) {
+    public void setRole(Role role) {
         this.role = role;
-
-        return this;
     }
 
 }

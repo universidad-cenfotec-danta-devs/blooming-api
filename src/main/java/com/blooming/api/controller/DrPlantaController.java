@@ -30,11 +30,23 @@ public class DrPlantaController {
                 HttpStatus.OK, request);
     }
 
-    @GetMapping("/plantSearch")
-    public ResponseEntity<?> getPlantInformationByName(@RequestParam("plantName") String plantName, HttpServletRequest request) {
+    @GetMapping("/plantSearch/{idAccessToken}")
+    public ResponseEntity<?> getPlantInformationByName(@RequestParam("plantName") String plantName,
+                                                       @PathVariable("idAccessToken") String idAccessToken,
+                                                       HttpServletRequest request) {
         return new GlobalHandlerResponse().handleResponse(
                 HttpStatus.OK.name(),
-                plantIdService.getPlantInformationByName(plantName),
+                plantIdService.getPlantInformationByName(plantName, idAccessToken),
+                HttpStatus.OK, request);
+    }
+
+
+    @PostMapping("/generateSchedule/{idAccessToken}")
+    public ResponseEntity<?> generateWateringPlan(@PathVariable("idAccessToken") String idAccessToken,
+                                                  HttpServletRequest request) {
+        return new GlobalHandlerResponse().handleResponse(
+                HttpStatus.OK.name(),
+                plantIdService.generateWateringSchedule(idAccessToken),
                 HttpStatus.OK, request);
     }
 
