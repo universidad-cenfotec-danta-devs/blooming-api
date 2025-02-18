@@ -84,8 +84,8 @@ public class DrPlantaController {
 
     }
 
-    @PostMapping("/pdf/{id}")
-    public ResponseEntity<?> generateWateringPlanPdf(@PathVariable("id") Long id) {
+    @GetMapping("/pdf/{id}")
+    public ResponseEntity<byte[]> generateWateringPlanPdf(@PathVariable("id") Long id) {
         WateringPlan wateringPlan = wateringPlanService.getWateringPlanById(id);
         byte[] pdfBytes = fileGeneratorService.generateWateringPlanPdf(wateringPlan);
         HttpHeaders headers = new HttpHeaders();
@@ -95,6 +95,5 @@ public class DrPlantaController {
                 .headers(headers)
                 .body(pdfBytes);
     }
-
 
 }
