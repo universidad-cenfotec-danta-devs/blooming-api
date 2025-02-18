@@ -1,8 +1,12 @@
 package com.blooming.api.service.plantAI;
 
+import com.blooming.api.response.dto.WateringDayDTO;
+import com.blooming.api.response.dto.ApiResponseDTO;
+import com.blooming.api.response.dto.MessageDTO;
 import com.blooming.api.response.dto.PlantDetailsDTO;
 import com.blooming.api.response.dto.PlantSuggestionDTO;
 import com.blooming.api.utils.DTOUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -11,9 +15,10 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Base64;
-import java.util.List;
-import java.util.Optional;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Service
 public class PlantAIService implements IPlantAIService {
@@ -70,12 +75,12 @@ public class PlantAIService implements IPlantAIService {
                 .orElseThrow(() -> new IllegalArgumentException("Error parsing plant: " + plantName));
 
         if (plantDetailsDTO.getWatering() == null) {
-            plantDetailsDTO.setWatering(generateWatering(idAccessToken, headers).orElseThrow(() -> new EntityNotFoundException("Watering not found")));
+            plantDetailsDTO.setWatering(generateWateringValues(idAccessToken, headers).orElseThrow(() -> new EntityNotFoundException("Watering not found")));
         }
         return plantDetailsDTO;
     }
 
-    private Optional<String> generateWatering(String accessToken, HttpHeaders headers) {
+    private Optional<String> generateWateringValues(String accessToken, HttpHeaders headers) {
         String url = apiIdentifyUrl + "/" + accessToken + "/conversation";
         String jsonBody = """
                 {
@@ -105,19 +110,76 @@ public class PlantAIService implements IPlantAIService {
     }
 
     @Override
-    public String generateWateringSchedule(String idAccessToken) {
+    public List<String> generateWateringSchedule(String idAccessToken) {
         String url = apiIdentifyUrl + "/" + idAccessToken + "/conversation";
-        String jsonBody = """
+        String currentDate = ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_DATE_TIME);
+        String jsonBody = String.format("""
                 {
-                    "question": "Generate a watering schedule for the next 2 months for this plant, using the watering, bestWatering, bestLightCondition, and bestSoilType values. Only include dates and times",
-                    "prompt": "Only include dates. No extra text. No special characters like asterisks"
+                    "question": "Generate a watering schedule for the next 2 months for this plant at 3pm, using the watering, bestWatering, bestLightCondition, and bestSoilType values. Only include dates and times in the format yyyyMMddTHHmmssZ. Ensure all dates are strictly after the current date (today's date, %s). Start answer content with text wateringSchedule: ",
+                    "prompt": "Only include dates in format yyyyMMddTHHmmssZ that are after today. No extra text. No special characters like asterisks. Start answer content with text wateringSchedule: ",
+                    "created": "%s"
                 }
-                """;
+                """, currentDate, currentDate);
+
         var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
-        JsonNode jsonNode = getJsonNodeFromResponseBody(response);
-        return "";
+        String wateringDates = getWateringSchedule(response);
+        assert wateringDates != null;
+        return Arrays.asList(wateringDates.trim().split("\n"));
     }
+
+    @Override
+    public List<WateringDayDTO> generateRecommendationsForEachDay(String idAccessToken, List<String> wateringDates) {
+        String url = apiIdentifyUrl + "/" + idAccessToken + "/conversation";
+
+        String jsonBody = String.format("""
+                {
+                    "question": "Start content with value wateringRecommendations: then generate recommendations for each date based on this list generated for watering using the watering, bestWatering, bestLightCondition, and bestSoilType values and all of the others. %s",
+                    "prompt": "Only include dates in format yyyy-MM-dd that are after today. No extra text. No special characters like asterisks. Start answer content with text wateringRecommendations: "
+                }
+                """, wateringDates);
+
+        var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
+        requestEntity = new HttpEntity<>(jsonBody, createHeaders());
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+        return parseWateringRecommendations(response);
+    }
+    private List<WateringDayDTO> parseWateringRecommendations(ResponseEntity<String> response) {
+        List<WateringDayDTO> wateringDays = new ArrayList<>();
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        try {
+            JsonNode root = objectMapper.readTree(response.getBody());
+            JsonNode messages = root.path("messages");
+
+            for (JsonNode message : messages) {
+                String content = message.path("content").asText();
+                if (content.startsWith("wateringRecommendations:")) {
+                    String[] lines = content.split("\n");
+
+                    for (int i = 1; i < lines.length; i++) { // Omitir la primera línea (el título)
+                        String[] parts = lines[i].split(": ", 2);
+                        if (parts.length == 2) {
+                            String dateTimeStr = parts[0]; // Formato: yyyyMMddTHHmmssZ
+                            String recommendation = parts[1];
+
+                            int year = Integer.parseInt(dateTimeStr.substring(0, 4));
+                            int month = Integer.parseInt(dateTimeStr.substring(4, 6));
+                            int day = Integer.parseInt(dateTimeStr.substring(6, 8));
+
+                            wateringDays.add(new WateringDayDTO(day, month, year, recommendation));
+                        }
+                    }
+                    break; // Ya encontramos la sección, no es necesario seguir iterando
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return wateringDays;
+    }
+
 
     private Optional<String> searchPlantByScientificName(String plantName) {
         try {
@@ -138,6 +200,23 @@ public class PlantAIService implements IPlantAIService {
         } catch (Exception e) {
             return Optional.empty();
         }
+    }
+
+    private String getWateringSchedule(ResponseEntity<String> response) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            ApiResponseDTO apiResponse = objectMapper.readValue(response.getBody(), ApiResponseDTO.class);
+
+
+            for (MessageDTO message : apiResponse.getMessages()) {
+                if ("answer".equals(message.getType()) && message.getContent().startsWith("wateringSchedule:")) {
+                    return message.getContent().replace("wateringSchedule:", "").trim();
+                }
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error parsing JSON response", e);
+        }
+        return null;
     }
 
     private JsonNode getJsonNodeFromResponseBody(ResponseEntity<String> response) {

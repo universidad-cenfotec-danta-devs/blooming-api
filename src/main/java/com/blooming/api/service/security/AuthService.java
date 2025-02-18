@@ -2,7 +2,7 @@ package com.blooming.api.service.security;
 
 
 import com.blooming.api.entity.User;
-import com.blooming.api.repository.IUserRepository;
+import com.blooming.api.repository.user.IUserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

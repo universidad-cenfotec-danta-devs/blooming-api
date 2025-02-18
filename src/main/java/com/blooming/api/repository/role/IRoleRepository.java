@@ -1,4 +1,4 @@
-package com.blooming.api.repository;
+package com.blooming.api.repository.role;
 
 import com.blooming.api.entity.Role;
 import com.blooming.api.entity.RoleEnum;
