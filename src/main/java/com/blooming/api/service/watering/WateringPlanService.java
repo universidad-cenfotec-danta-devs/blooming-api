@@ -3,16 +3,13 @@ package com.blooming.api.service.watering;
 import com.blooming.api.entity.User;
 import com.blooming.api.entity.WateringDay;
 import com.blooming.api.entity.WateringPlan;
-import com.blooming.api.exception.ParsingException;
 import com.blooming.api.repository.watering.IWateringPlanRepository;
 import com.blooming.api.response.dto.WateringDayDTO;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class WateringPlanService implements IWateringPlanService {
