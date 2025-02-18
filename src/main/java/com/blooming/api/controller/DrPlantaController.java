@@ -4,12 +4,13 @@ import com.blooming.api.entity.User;
 import com.blooming.api.entity.WateringPlan;
 import com.blooming.api.response.dto.WateringDayDTO;
 import com.blooming.api.response.http.GlobalHandlerResponse;
-import com.blooming.api.service.google.CalendarFileGenerator;
+import com.blooming.api.service.google.FileGeneratorService;
 import com.blooming.api.service.plantAI.IPlantAIService;
 import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
 import com.blooming.api.service.watering.WateringPlanService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,14 +26,14 @@ public class DrPlantaController {
 
     private final IPlantAIService plantIdService;
     private final IUserService userService;
-    private final CalendarFileGenerator calendarFileGenerator;
+    private final FileGeneratorService fileGeneratorService;
     private final WateringPlanService wateringPlanService;
     private final JwtService jwtService;
 
-    public DrPlantaController(IPlantAIService plantIdService, IUserService userService, CalendarFileGenerator calendarFileGenerator, WateringPlanService wateringPlanService, JwtService jwtService) {
+    public DrPlantaController(IPlantAIService plantIdService, IUserService userService, FileGeneratorService fileGeneratorService, WateringPlanService wateringPlanService, JwtService jwtService) {
         this.plantIdService = plantIdService;
         this.userService = userService;
-        this.calendarFileGenerator = calendarFileGenerator;
+        this.fileGeneratorService = fileGeneratorService;
         this.wateringPlanService = wateringPlanService;
         this.jwtService = jwtService;
     }
@@ -66,8 +67,8 @@ public class DrPlantaController {
 
         if (user.isPresent()) {
             List<String> wateringSchedule = plantIdService.generateWateringSchedule(idAccessToken);
-            calendarFileGenerator.generateWateringScheduleFile(wateringSchedule);
-            List<WateringDayDTO> wateringDays = plantIdService.generateRecommendationsForEachDay(idAccessToken, wateringSchedule);
+            fileGeneratorService.generateGoogleCalendarFile(wateringSchedule);
+            List<WateringDayDTO> wateringDays = plantIdService.generateWateringDays(idAccessToken, wateringSchedule);
             WateringPlan wateringPlan = wateringPlanService.register(wateringDays, user.get());
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.OK.name(),
@@ -80,6 +81,18 @@ public class DrPlantaController {
                     HttpStatus.BAD_REQUEST, request);
         }
 
+    }
+
+    @PostMapping("/pdf/{id}")
+    public ResponseEntity<?> generateWateringPlanPdf(@PathVariable("id") Long id) {
+        WateringPlan wateringPlan = wateringPlanService.getWateringPlanById(id);
+        byte[] pdfBytes = fileGeneratorService.generateWateringPlanPdf(wateringPlan);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=watering_plan_" + id + ".pdf");
+        headers.add("Content-Type", "application/pdf");
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdfBytes);
     }
 
 

@@ -1,12 +1,10 @@
 package com.blooming.api.service.plantAI;
 
+import com.blooming.api.exception.ParsingException;
 import com.blooming.api.response.dto.WateringDayDTO;
-import com.blooming.api.response.dto.ApiResponseDTO;
-import com.blooming.api.response.dto.MessageDTO;
 import com.blooming.api.response.dto.PlantDetailsDTO;
 import com.blooming.api.response.dto.PlantSuggestionDTO;
-import com.blooming.api.utils.DTOUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.blooming.api.utils.ParsingUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -58,8 +56,8 @@ public class PlantAIService implements IPlantAIService {
         var requestEntity = new HttpEntity<>(jsonBody, headers);
         ResponseEntity<String> response = restTemplate.exchange(apiIdentifyUrl, HttpMethod.POST, requestEntity, String.class);
 
-        return DTOUtils.parsePlantSuggestions(response.getBody())
-                .orElseThrow(() -> new IllegalArgumentException("Error parsing plant suggestion"));
+        return ParsingUtils.parsePlantSuggestions(response.getBody())
+                .orElseThrow(() -> new ParsingException("Error parsing plant suggestion"));
     }
 
 
@@ -71,8 +69,8 @@ public class PlantAIService implements IPlantAIService {
         var requestEntity = new HttpEntity<>(headers);
         String url = apiPlantBaseUrl + accessTokenForDetails + DETAIL_PARAMS;
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
-        PlantDetailsDTO plantDetailsDTO = DTOUtils.parsePlantDetails(response.getBody())
-                .orElseThrow(() -> new IllegalArgumentException("Error parsing plant: " + plantName));
+        PlantDetailsDTO plantDetailsDTO = ParsingUtils.parsePlantDetails(response.getBody())
+                .orElseThrow(() -> new ParsingException("Error parsing plant: " + plantName));
 
         if (plantDetailsDTO.getWatering() == null) {
             plantDetailsDTO.setWatering(generateWateringValues(idAccessToken, headers).orElseThrow(() -> new EntityNotFoundException("Watering not found")));
@@ -92,7 +90,7 @@ public class PlantAIService implements IPlantAIService {
         var requestEntity = new HttpEntity<>(jsonBody, headers);
         try {
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
-            JsonNode jsonNode = getJsonNodeFromResponseBody(response);
+            JsonNode jsonNode = ParsingUtils.getJsonNodeFromResponseBody(response);
             JsonNode messages = jsonNode.path("messages");
             String wateringInfo = "";
 
@@ -123,13 +121,13 @@ public class PlantAIService implements IPlantAIService {
 
         var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
-        String wateringDates = getWateringSchedule(response);
+        String wateringDates = ParsingUtils.parseWateringDatesToString(response);
         assert wateringDates != null;
         return Arrays.asList(wateringDates.trim().split("\n"));
     }
 
     @Override
-    public List<WateringDayDTO> generateRecommendationsForEachDay(String idAccessToken, List<String> wateringDates) {
+    public List<WateringDayDTO> generateWateringDays(String idAccessToken, List<String> wateringDates) {
         String url = apiIdentifyUrl + "/" + idAccessToken + "/conversation";
 
         String jsonBody = String.format("""
@@ -142,42 +140,7 @@ public class PlantAIService implements IPlantAIService {
         var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
         requestEntity = new HttpEntity<>(jsonBody, createHeaders());
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
-        return parseWateringRecommendations(response);
-    }
-    private List<WateringDayDTO> parseWateringRecommendations(ResponseEntity<String> response) {
-        List<WateringDayDTO> wateringDays = new ArrayList<>();
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        try {
-            JsonNode root = objectMapper.readTree(response.getBody());
-            JsonNode messages = root.path("messages");
-
-            for (JsonNode message : messages) {
-                String content = message.path("content").asText();
-                if (content.startsWith("wateringRecommendations:")) {
-                    String[] lines = content.split("\n");
-
-                    for (int i = 1; i < lines.length; i++) { // Omitir la primera línea (el título)
-                        String[] parts = lines[i].split(": ", 2);
-                        if (parts.length == 2) {
-                            String dateTimeStr = parts[0]; // Formato: yyyyMMddTHHmmssZ
-                            String recommendation = parts[1];
-
-                            int year = Integer.parseInt(dateTimeStr.substring(0, 4));
-                            int month = Integer.parseInt(dateTimeStr.substring(4, 6));
-                            int day = Integer.parseInt(dateTimeStr.substring(6, 8));
-
-                            wateringDays.add(new WateringDayDTO(day, month, year, recommendation));
-                        }
-                    }
-                    break; // Ya encontramos la sección, no es necesario seguir iterando
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return wateringDays;
+        return ParsingUtils.parseWateringDays(response);
     }
 
 
@@ -202,31 +165,7 @@ public class PlantAIService implements IPlantAIService {
         }
     }
 
-    private String getWateringSchedule(ResponseEntity<String> response) {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            ApiResponseDTO apiResponse = objectMapper.readValue(response.getBody(), ApiResponseDTO.class);
 
-
-            for (MessageDTO message : apiResponse.getMessages()) {
-                if ("answer".equals(message.getType()) && message.getContent().startsWith("wateringSchedule:")) {
-                    return message.getContent().replace("wateringSchedule:", "").trim();
-                }
-            }
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error parsing JSON response", e);
-        }
-        return null;
-    }
-
-    private JsonNode getJsonNodeFromResponseBody(ResponseEntity<String> response) {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.readTree(response.getBody());
-        } catch (Exception e) {
-            throw new RuntimeException("Error parsing response", e);
-        }
-    }
 
     private HttpHeaders createHeaders() {
         return new HttpHeaders() {{

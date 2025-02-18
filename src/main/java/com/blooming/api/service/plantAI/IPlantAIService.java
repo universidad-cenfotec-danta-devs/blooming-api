@@ -13,5 +13,5 @@ public interface IPlantAIService {
 
     List<String> generateWateringSchedule(String idAccessToken);
 
-    List<WateringDayDTO> generateRecommendationsForEachDay(String idAccessToken, List<String> wateringDates);
+    List<WateringDayDTO> generateWateringDays(String idAccessToken, List<String> wateringDates);
 }

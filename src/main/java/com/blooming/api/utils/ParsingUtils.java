@@ -1,18 +1,18 @@
 package com.blooming.api.utils;
 
-import com.blooming.api.response.dto.PlantDetailsDTO;
-import com.blooming.api.response.dto.PlantSuggestionDTO;
+import com.blooming.api.response.dto.*;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hibernate.query.sqm.ParsingException;
+import org.springframework.http.ResponseEntity;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class DTOUtils {
+public class ParsingUtils {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -43,10 +43,9 @@ public class DTOUtils {
 
                 suggestionsList.add(dto);
             }
-
             return Optional.of(suggestionsList);
         } catch (Exception e) {
-            throw new RuntimeException("Error parsing plant suggestions", e);
+            throw new com.blooming.api.exception.ParsingException("Error parsing plant suggestions", e);
         }
     }
 
@@ -70,12 +69,72 @@ public class DTOUtils {
             return Optional.of(dto);
 
         } catch (JsonParseException e) {
-            throw new ParsingException("Error parsing plant details: Invalid JSON format" + e.getMessage());
+            throw new com.blooming.api.exception.ParsingException("Error parsing plant details: Invalid JSON format" + e.getMessage());
         } catch (JsonMappingException e) {
-            throw new ParsingException("Error mapping plant details: Missing expected fields" + e.getMessage());
+            throw new com.blooming.api.exception.ParsingException("Error mapping plant details: Missing expected fields" + e.getMessage());
         } catch (Exception e) {
-            throw new ParsingException("Error parsing plant details: " + e.getMessage());
+            throw new com.blooming.api.exception.ParsingException("Error parsing plant details: " + e.getMessage());
         }
     }
 
+    public static List<WateringDayDTO> parseWateringDays(ResponseEntity<String> response) {
+        List<WateringDayDTO> wateringDays = new ArrayList<>();
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        try {
+            JsonNode root = objectMapper.readTree(response.getBody());
+            JsonNode messages = root.path("messages");
+
+            for (JsonNode message : messages) {
+                String content = message.path("content").asText();
+                if (content.startsWith("wateringRecommendations:")) {
+                    String[] lines = content.split("\n");
+
+                    for (int i = 1; i < lines.length; i++) { // Omitir la primera línea
+                        String[] parts = lines[i].split(": ", 2);
+                        if (parts.length == 2) {
+                            String dateTimeStr = parts[0]; // Formato: yyyyMMddTHHmmssZ
+                            String recommendation = parts[1];
+
+                            int year = Integer.parseInt(dateTimeStr.substring(0, 4));
+                            int month = Integer.parseInt(dateTimeStr.substring(4, 6));
+                            int day = Integer.parseInt(dateTimeStr.substring(6, 8));
+
+                            wateringDays.add(new WateringDayDTO(day, month, year, recommendation));
+                        }
+                    }
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            throw new ParsingException(e.getMessage());
+        }
+
+        return wateringDays;
+    }
+
+    public static JsonNode getJsonNodeFromResponseBody(ResponseEntity<String> response) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readTree(response.getBody());
+        } catch (Exception e) {
+            throw new com.blooming.api.exception.ParsingException("Error parsing response", e);
+        }
+    }
+
+    public static String parseWateringDatesToString(ResponseEntity<String> response) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            ApiResponseDTO apiResponse = objectMapper.readValue(response.getBody(), ApiResponseDTO.class);
+
+            for (MessageDTO message : apiResponse.getMessages()) {
+                if ("answer".equals(message.getType()) && message.getContent().startsWith("wateringSchedule:")) {
+                    return message.getContent().replace("wateringSchedule:", "").trim();
+                }
+            }
+        } catch (Exception e) {
+            throw new com.blooming.api.exception.ParsingException("Error parsing JSON response", e);
+        }
+        return null;
+    }
 }

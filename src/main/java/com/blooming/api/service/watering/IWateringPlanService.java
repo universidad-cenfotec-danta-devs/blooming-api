@@ -7,5 +7,6 @@ import com.blooming.api.response.dto.WateringDayDTO;
 import java.util.List;
 
 public interface IWateringPlanService {
-    WateringPlan register(List<WateringDayDTO> wateringDays,  User user);
+    WateringPlan register(List<WateringDayDTO> wateringDays, User user);
+    WateringPlan getWateringPlanById(Long id);
 }
