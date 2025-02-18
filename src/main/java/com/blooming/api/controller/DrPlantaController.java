@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,6 +39,7 @@ public class DrPlantaController {
         this.jwtService = jwtService;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER', 'NURSERY_USER')")
     @PostMapping("/img")
     public ResponseEntity<?> processImg(@RequestParam("img") MultipartFile img, HttpServletRequest request) throws IOException {
         byte[] imageBytes = img.getBytes();
@@ -48,6 +50,7 @@ public class DrPlantaController {
                 HttpStatus.OK, request);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
     @GetMapping("/plantSearch/{idAccessToken}")
     public ResponseEntity<?> getPlantInformationByName(@RequestParam("plantName") String plantName,
                                                        @PathVariable("idAccessToken") String idAccessToken,
@@ -58,6 +61,7 @@ public class DrPlantaController {
                 HttpStatus.OK, request);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
     @PostMapping("/generateSchedule/{idAccessToken}")
     public ResponseEntity<?> generateWateringPlan(@PathVariable("idAccessToken") String idAccessToken,
                                                   HttpServletRequest request) {
@@ -84,6 +88,7 @@ public class DrPlantaController {
 
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
     @GetMapping("/pdf/{id}")
     public ResponseEntity<byte[]> generateWateringPlanPdf(@PathVariable("id") Long id) {
         WateringPlan wateringPlan = wateringPlanService.getWateringPlanById(id);

@@ -16,15 +16,15 @@ public class FileGeneratorService implements IFileGeneratorService {
 
     @Override
     public void generateGoogleCalendarFile(List<String> wateringSchedule) {
-        String calendarContent = "BEGIN:VCALENDAR\nVERSION:2.0\n";
+        StringBuilder calendarContent = new StringBuilder("BEGIN:VCALENDAR\nVERSION:2.0\n");
 
         for (String date : wateringSchedule) {
-            calendarContent += "BEGIN:VEVENT\nSUMMARY:Watering\nDTSTART:" + formatDate(date) + "\nDTEND:" + formatDate(date) + "\nEND:VEVENT\n";
+            calendarContent.append("BEGIN:VEVENT\nSUMMARY:Watering\nDTSTART:").append(formatDate(date)).append("\nDTEND:").append(formatDate(date)).append("\nEND:VEVENT\n");
         }
-        calendarContent += "END:VCALENDAR";
+        calendarContent.append("END:VCALENDAR");
         File icsFile = new File("watering_schedule.ics");
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(icsFile))) {
-            writer.write(calendarContent);
+            writer.write(calendarContent.toString());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

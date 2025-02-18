@@ -25,6 +25,7 @@ public class SecurityConfig {
     private final String NURSERY_USER = "NURSERY_USER";
 
     private final String LOG_IN_URI = "/api/users/logIn";
+    private final String BASE_URI_DR_PLANTA = "/api/dr";
 
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -40,6 +41,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers(HttpMethod.POST, LOG_IN_URI).permitAll()
+                        .requestMatchers(HttpMethod.GET, BASE_URI_DR_PLANTA).hasAnyRole(ADMIN_USER, DESIGNER_USER, SIMPLE_USER)
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
