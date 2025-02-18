@@ -70,6 +70,7 @@ public class DrPlantaController {
             fileGeneratorService.generateGoogleCalendarFile(wateringSchedule);
             List<WateringDayDTO> wateringDays = plantIdService.generateWateringDays(idAccessToken, wateringSchedule);
             WateringPlan wateringPlan = wateringPlanService.register(wateringDays, user.get());
+            fileGeneratorService.generateWateringPlanPdf(wateringPlan);
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.OK.name(),
                     wateringPlan,

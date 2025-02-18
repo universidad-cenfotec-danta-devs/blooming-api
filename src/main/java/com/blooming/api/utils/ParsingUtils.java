@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public class ParsingUtils {
@@ -120,6 +121,19 @@ public class ParsingUtils {
         } catch (Exception e) {
             throw new com.blooming.api.exception.ParsingException("Error parsing response", e);
         }
+    }
+
+    public static String getLastAnswerFromResponse(JsonNode rootNode) {
+        JsonNode messages = rootNode.path("messages");
+        String lastAnswer = null;
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            JsonNode message = messages.get(i);
+            if ("answer".equals(message.path("type").asText())) {
+                lastAnswer = message.path("content").asText();
+                break;
+            }
+        }
+        return Objects.requireNonNullElse(lastAnswer, "No answer found.");
     }
 
     public static String parseWateringDatesToString(ResponseEntity<String> response) {

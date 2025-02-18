@@ -14,4 +14,5 @@ public interface IPlantAIService {
     List<String> generateWateringSchedule(String idAccessToken);
 
     List<WateringDayDTO> generateWateringDays(String idAccessToken, List<String> wateringDates);
+    String askPlantId(String idAccessToken, String question);
 }

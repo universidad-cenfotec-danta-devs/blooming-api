@@ -79,7 +79,6 @@ public class PlantAIService implements IPlantAIService {
     }
 
     private Optional<String> generateWateringValues(String accessToken, HttpHeaders headers) {
-        String url = apiIdentifyUrl + "/" + accessToken + "/conversation";
         String jsonBody = """
                 {
                     "question": "The watering of this plant is dry(1), medium(2) or wet(3)?",
@@ -89,7 +88,7 @@ public class PlantAIService implements IPlantAIService {
 
         var requestEntity = new HttpEntity<>(jsonBody, headers);
         try {
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+            ResponseEntity<String> response = restTemplate.exchange(buildAskPlantIdUrl(accessToken), HttpMethod.POST, requestEntity, String.class);
             JsonNode jsonNode = ParsingUtils.getJsonNodeFromResponseBody(response);
             JsonNode messages = jsonNode.path("messages");
             String wateringInfo = "";
@@ -109,7 +108,6 @@ public class PlantAIService implements IPlantAIService {
 
     @Override
     public List<String> generateWateringSchedule(String idAccessToken) {
-        String url = apiIdentifyUrl + "/" + idAccessToken + "/conversation";
         String currentDate = ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_DATE_TIME);
         String jsonBody = String.format("""
                 {
@@ -120,7 +118,7 @@ public class PlantAIService implements IPlantAIService {
                 """, currentDate, currentDate);
 
         var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+        ResponseEntity<String> response = restTemplate.exchange(buildAskPlantIdUrl(idAccessToken), HttpMethod.POST, requestEntity, String.class);
         String wateringDates = ParsingUtils.parseWateringDatesToString(response);
         assert wateringDates != null;
         return Arrays.asList(wateringDates.trim().split("\n"));
@@ -128,8 +126,6 @@ public class PlantAIService implements IPlantAIService {
 
     @Override
     public List<WateringDayDTO> generateWateringDays(String idAccessToken, List<String> wateringDates) {
-        String url = apiIdentifyUrl + "/" + idAccessToken + "/conversation";
-
         String jsonBody = String.format("""
                 {
                     "question": "Start content with value wateringRecommendations: then generate recommendations for each date based on this list generated for watering using the watering, bestWatering, bestLightCondition, and bestSoilType values and all of the others. %s",
@@ -139,8 +135,26 @@ public class PlantAIService implements IPlantAIService {
 
         var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
         requestEntity = new HttpEntity<>(jsonBody, createHeaders());
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+        ResponseEntity<String> response = restTemplate.exchange(buildAskPlantIdUrl(idAccessToken), HttpMethod.POST, requestEntity, String.class);
         return ParsingUtils.parseWateringDays(response);
+    }
+
+    @Override
+    public String askPlantId(String idAccessToken, String question) {
+        String jsonBody = String.format("""
+                {
+                    "question": "%s",
+                    "prompt": "No extra text. No special characters like asterisks."
+                }
+                """, question);
+
+        HttpHeaders headers = createHeaders();
+        HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, headers);
+        ResponseEntity<String> response = restTemplate.exchange(buildAskPlantIdUrl(idAccessToken), HttpMethod.POST, requestEntity, String.class);
+
+        JsonNode jsonNode = ParsingUtils.getJsonNodeFromResponseBody(response);
+
+        return ParsingUtils.getLastAnswerFromResponse(jsonNode);
     }
 
 
@@ -165,7 +179,9 @@ public class PlantAIService implements IPlantAIService {
         }
     }
 
-
+    private String buildAskPlantIdUrl(String idAccessToken) {
+        return apiIdentifyUrl + "/" + idAccessToken + "/conversation";
+    }
 
     private HttpHeaders createHeaders() {
         return new HttpHeaders() {{

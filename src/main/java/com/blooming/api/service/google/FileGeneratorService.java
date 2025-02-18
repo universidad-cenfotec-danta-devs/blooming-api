@@ -1,5 +1,6 @@
 package com.blooming.api.service.google;
 
+import com.blooming.api.entity.WateringDay;
 import com.blooming.api.entity.WateringPlan;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.Paragraph;
@@ -30,26 +31,25 @@ public class FileGeneratorService implements IFileGeneratorService {
     }
 
     public byte[] generateWateringPlanPdf(WateringPlan wateringPlan) {
-        // Crear un documento PDF
+
         Document document = new Document();
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
         try {
-            // Configurar el escritor de PDF para escribir el documento
+
             PdfWriter.getInstance(document, byteArrayOutputStream);
             document.open();
 
-            // Agregar contenido al PDF
             document.add(new Paragraph("Watering Plan for User: " + wateringPlan.getUser().getEmail()));
             document.add(new Paragraph("--------------------------------------------------"));
 
-            // Agregar detalles de los días de riego
-            for (var wateringDay : wateringPlan.getWateringDays()) {
-                document.add(new Paragraph("Date: " + wateringDay.getDate()));
-                document.add(new Paragraph("Watering Amount: " + wateringDay.getWateringAmount()));
+            for (WateringDay wateringDay : wateringPlan.getWateringDays()) {
+                document.add(new Paragraph("Date: " + wateringDay.getYear() + "-"
+                        + String.format("%02d", wateringDay.getMonth()) + "-"
+                        + String.format("%02d", wateringDay.getDay())));
+                document.add(new Paragraph("Recommendation: " + wateringDay.getRecommendation()));
                 document.add(new Paragraph("--------------------------------------------------"));
             }
-
             document.close();
 
         } catch (Exception e) {
