@@ -1,8 +1,8 @@
 package com.blooming.api.service.plantAI;
 
 import com.blooming.api.exception.ParsingException;
+import com.blooming.api.entity.PlantIdentified;
 import com.blooming.api.response.dto.WateringDayDTO;
-import com.blooming.api.response.dto.PlantDetailsDTO;
 import com.blooming.api.response.dto.PlantSuggestionDTO;
 import com.blooming.api.utils.ParsingUtils;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -62,20 +62,20 @@ public class PlantAIService implements IPlantAIService {
 
 
     @Override
-    public PlantDetailsDTO getPlantInformationByName(String plantName, String idAccessToken) {
+    public PlantIdentified getPlantInformationByName(String plantName, String idAccessToken) {
         String accessTokenForDetails = searchPlantByScientificName(plantName)
                 .orElseThrow(() -> new EntityNotFoundException("Plant not found with scientific name: " + plantName));
         var headers = createHeaders();
         var requestEntity = new HttpEntity<>(headers);
         String url = apiPlantBaseUrl + accessTokenForDetails + DETAIL_PARAMS;
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
-        PlantDetailsDTO plantDetailsDTO = ParsingUtils.parsePlantDetails(response.getBody())
+        PlantIdentified plantIdentified = ParsingUtils.parsePlantDetails(response.getBody())
                 .orElseThrow(() -> new ParsingException("Error parsing plant: " + plantName));
 
-        if (plantDetailsDTO.getWatering() == null) {
-            plantDetailsDTO.setWatering(generateWateringValues(idAccessToken, headers).orElseThrow(() -> new EntityNotFoundException("Watering not found")));
+        if (plantIdentified.getWatering() == null) {
+            plantIdentified.setWatering(generateWateringValues(idAccessToken, headers).orElseThrow(() -> new EntityNotFoundException("Watering not found")));
         }
-        return plantDetailsDTO;
+        return plantIdentified;
     }
 
     private Optional<String> generateWateringValues(String accessToken, HttpHeaders headers) {

@@ -2,9 +2,11 @@ package com.blooming.api.controller;
 
 import com.blooming.api.entity.User;
 import com.blooming.api.entity.WateringPlan;
+import com.blooming.api.entity.PlantIdentified;
 import com.blooming.api.response.dto.WateringDayDTO;
 import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.service.google.FileGeneratorService;
+import com.blooming.api.service.plant.PlantIdentifiedService;
 import com.blooming.api.service.plantAI.IPlantAIService;
 import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
@@ -29,19 +31,26 @@ public class DrPlantaController {
     private final IUserService userService;
     private final FileGeneratorService fileGeneratorService;
     private final WateringPlanService wateringPlanService;
+    private final PlantIdentifiedService plantIdentifiedService;
     private final JwtService jwtService;
 
-    public DrPlantaController(IPlantAIService plantIdService, IUserService userService, FileGeneratorService fileGeneratorService, WateringPlanService wateringPlanService, JwtService jwtService) {
+    public DrPlantaController(IPlantAIService plantIdService,
+                              IUserService userService,
+                              FileGeneratorService fileGeneratorService,
+                              WateringPlanService wateringPlanService,
+                              PlantIdentifiedService plantIdentifiedService,
+                              JwtService jwtService) {
         this.plantIdService = plantIdService;
         this.userService = userService;
         this.fileGeneratorService = fileGeneratorService;
         this.wateringPlanService = wateringPlanService;
+        this.plantIdentifiedService = plantIdentifiedService;
         this.jwtService = jwtService;
     }
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER', 'NURSERY_USER')")
     @PostMapping("/img")
-    public ResponseEntity<?> processImg(@RequestParam("img") MultipartFile img, HttpServletRequest request) throws IOException {
+    public ResponseEntity<?> generatePlantSuggestions(@RequestParam("img") MultipartFile img, HttpServletRequest request) throws IOException {
         byte[] imageBytes = img.getBytes();
 
         return new GlobalHandlerResponse().handleResponse(
@@ -51,29 +60,44 @@ public class DrPlantaController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
-    @GetMapping("/plantSearch/{idAccessToken}")
-    public ResponseEntity<?> getPlantInformationByName(@RequestParam("plantName") String plantName,
+    @GetMapping("/savePlantIdentifiedByUser/{idAccessToken}")
+    public ResponseEntity<?> savePlantIdentifiedByUser(@RequestParam("plantName") String plantName,
                                                        @PathVariable("idAccessToken") String idAccessToken,
                                                        HttpServletRequest request) {
-        return new GlobalHandlerResponse().handleResponse(
-                HttpStatus.OK.name(),
-                plantIdService.getPlantInformationByName(plantName, idAccessToken),
-                HttpStatus.OK, request);
+
+        String username = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
+        Optional<User> user = userService.findByEmail(username);
+        if (user.isPresent()) {
+            PlantIdentified plantIdentified = plantIdService.getPlantInformationByName(plantName, idAccessToken);
+            plantIdentified.setUser(user.get());
+            plantIdentifiedService.register(plantIdentified);
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.OK.name(),
+                    plantIdentified,
+                    HttpStatus.OK, request);
+        } else {
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.BAD_REQUEST.name(),
+                    "",
+                    HttpStatus.BAD_REQUEST, request);
+        }
+
     }
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
-    @PostMapping("/generateSchedule/{idAccessToken}")
+    @PostMapping("/generateSchedule/{idAccessToken}/{plantId}")
     public ResponseEntity<?> generateWateringPlan(@PathVariable("idAccessToken") String idAccessToken,
+                                                  @PathVariable("plantId") Long plantId,
                                                   HttpServletRequest request) {
 
         String username = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
         Optional<User> user = userService.findByEmail(username);
-
+        PlantIdentified plantIdentified = plantIdentifiedService.getById(plantId);
         if (user.isPresent()) {
             List<String> wateringSchedule = plantIdService.generateWateringSchedule(idAccessToken);
             fileGeneratorService.generateGoogleCalendarFile(wateringSchedule);
             List<WateringDayDTO> wateringDays = plantIdService.generateWateringDays(idAccessToken, wateringSchedule);
-            WateringPlan wateringPlan = wateringPlanService.register(wateringDays, user.get());
+            WateringPlan wateringPlan = wateringPlanService.register(wateringDays, plantIdentified);
             fileGeneratorService.generateWateringPlanPdf(wateringPlan);
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.OK.name(),

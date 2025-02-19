@@ -1,11 +1,12 @@
 package com.blooming.api.utils;
 
+import com.blooming.api.entity.PlantIdentified;
+import com.blooming.api.exception.ParsingException;
 import com.blooming.api.response.dto.*;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.hibernate.query.sqm.ParsingException;
 import org.springframework.http.ResponseEntity;
 
 import java.util.ArrayList;
@@ -46,11 +47,11 @@ public class ParsingUtils {
             }
             return Optional.of(suggestionsList);
         } catch (Exception e) {
-            throw new com.blooming.api.exception.ParsingException("Error parsing plant suggestions", e);
+            throw new ParsingException("Error parsing plant suggestions", e);
         }
     }
 
-    public static Optional<PlantDetailsDTO> parsePlantDetails(String jsonResponse) {
+    public static Optional<PlantIdentified> parsePlantDetails(String jsonResponse) {
         try {
             JsonNode plantDetailsNode = objectMapper.readTree(jsonResponse);
 
@@ -60,7 +61,7 @@ public class ParsingUtils {
             String bestLightCondition = plantDetailsNode.path("best_light_condition").isNull() ? null : plantDetailsNode.path("best_light_condition").asText();
             String bestSoilType = plantDetailsNode.path("best_soil_type").isNull() ? null : plantDetailsNode.path("best_soil_type").asText();
 
-            PlantDetailsDTO dto = new PlantDetailsDTO();
+            PlantIdentified dto = new PlantIdentified();
             dto.setName(name);
             dto.setWatering(watering);
             dto.setBestWatering(bestWatering);
@@ -112,6 +113,18 @@ public class ParsingUtils {
         }
 
         return wateringDays;
+    }
+
+    public static PlantIdentifiedDTO toPlantIdentifiedDTO(PlantIdentified plant) {
+        PlantIdentifiedDTO dto = new PlantIdentifiedDTO(
+                plant.getId(),
+                plant.getName(),
+                plant.getWatering(),
+                plant.getBestWatering(),
+                plant.getBestLightCondition(),
+                plant.getBestSoilType()
+        );
+        return dto;
     }
 
     public static JsonNode getJsonNodeFromResponseBody(ResponseEntity<String> response) {

@@ -7,7 +7,6 @@ import com.blooming.api.service.role.IRoleService;
 import com.blooming.api.service.user.IUserService;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -18,7 +17,7 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
     private final IRoleService roleService;
     private final IUserService userService;
 
-    public UserSeeder(IRoleService roleService, IUserService userService, PasswordEncoder passwordEncoder) {
+    public UserSeeder(IRoleService roleService, IUserService userService) {
         this.roleService = roleService;
         this.userService = userService;
     }

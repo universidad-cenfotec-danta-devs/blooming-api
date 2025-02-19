@@ -40,7 +40,7 @@ public class FileGeneratorService implements IFileGeneratorService {
             PdfWriter.getInstance(document, byteArrayOutputStream);
             document.open();
 
-            document.add(new Paragraph("Watering Plan for User: " + wateringPlan.getUser().getEmail()));
+            document.add(new Paragraph("Watering Plan for User: " + wateringPlan.getPlant().getUser().getEmail()));
             document.add(new Paragraph("--------------------------------------------------"));
 
             for (WateringDay wateringDay : wateringPlan.getWateringDays()) {

@@ -16,8 +16,8 @@ public class WateringPlan {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "plant_id", nullable = false)
+    private PlantIdentified plant;
 
     @OneToMany(mappedBy = "wateringPlan", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WateringDay> wateringDays;
@@ -25,8 +25,9 @@ public class WateringPlan {
     public WateringPlan() {
     }
 
-    public WateringPlan(List<WateringDay> wateringDays) {
+    public WateringPlan(List<WateringDay> wateringDays, PlantIdentified plant) {
         this.wateringDays = wateringDays;
+        this.plant = plant;
         for (WateringDay day : wateringDays) {
             day.setWateringPlan(this);
         }
