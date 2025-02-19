@@ -71,7 +71,8 @@ public class PlantAIService implements IPlantAIService {
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
         PlantIdentified plantIdentified = ParsingUtils.parsePlantDetails(response.getBody())
                 .orElseThrow(() -> new ParsingException("Error parsing plant: " + plantName));
-
+        //TODO: String s3ImageURL= S3Service.saveImage(...)
+        //TODO: plantIdentified.setImageURL(s3ImageURL)
         if (plantIdentified.getWatering() == null) {
             plantIdentified.setWatering(generateWateringValues(idAccessToken, headers).orElseThrow(() -> new EntityNotFoundException("Watering not found")));
         }

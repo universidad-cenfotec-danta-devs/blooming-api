@@ -8,10 +8,12 @@ import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.service.google.FileGeneratorService;
 import com.blooming.api.service.plant.PlantIdentifiedService;
 import com.blooming.api.service.plantAI.IPlantAIService;
+import com.blooming.api.service.plantAI.PlantAIService;
 import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
 import com.blooming.api.service.watering.WateringPlanService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.websocket.server.PathParam;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,19 +35,21 @@ public class DrPlantaController {
     private final WateringPlanService wateringPlanService;
     private final PlantIdentifiedService plantIdentifiedService;
     private final JwtService jwtService;
+    private final PlantAIService plantAIService;
 
     public DrPlantaController(IPlantAIService plantIdService,
                               IUserService userService,
                               FileGeneratorService fileGeneratorService,
                               WateringPlanService wateringPlanService,
                               PlantIdentifiedService plantIdentifiedService,
-                              JwtService jwtService) {
+                              JwtService jwtService, PlantAIService plantAIService) {
         this.plantIdService = plantIdService;
         this.userService = userService;
         this.fileGeneratorService = fileGeneratorService;
         this.wateringPlanService = wateringPlanService;
         this.plantIdentifiedService = plantIdentifiedService;
         this.jwtService = jwtService;
+        this.plantAIService = plantAIService;
     }
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER', 'NURSERY_USER')")
@@ -123,6 +127,13 @@ public class DrPlantaController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(pdfBytes);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
+    @PostMapping("/askAI/{idAccessToken}")
+    public String askAI(@PathVariable("idAccessToken") String idAccessToken,
+                        @PathParam("question") String question) {
+        return plantAIService.askPlantId(idAccessToken, question);
     }
 
 }

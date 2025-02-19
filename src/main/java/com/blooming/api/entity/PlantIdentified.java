@@ -13,6 +13,7 @@ public class PlantIdentified {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
+    private String imageURL;
     @Column(length = 1000)
     private String watering;
     @Column(length = 1000)
