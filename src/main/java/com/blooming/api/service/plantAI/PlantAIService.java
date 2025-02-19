@@ -68,7 +68,7 @@ public class PlantAIService implements IPlantAIService {
         var requestEntity = new HttpEntity<>(headers);
         String url = apiPlantBaseUrl + accessTokenForDetails + DETAIL_PARAMS;
         ResponseEntity<String> response = makeRequestToPlantAI(url, HttpMethod.GET, requestEntity);
-        PlantIdentified plantIdentified = ParsingUtils.parsePlantDetails(response);
+        PlantIdentified plantIdentified = ParsingUtils.parsePlantDetails(response, tokenPlant);
         //TODO: String s3ImageURL= S3Service.saveImage(...)
         //TODO: plantIdentified.setImageURL(s3ImageURL)
         if (plantIdentified.getWatering() == null) {

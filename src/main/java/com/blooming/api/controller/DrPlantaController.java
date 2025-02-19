@@ -3,6 +3,7 @@ package com.blooming.api.controller;
 import com.blooming.api.entity.User;
 import com.blooming.api.entity.WateringPlan;
 import com.blooming.api.entity.PlantIdentified;
+import com.blooming.api.response.dto.PlantIdentifiedDTO;
 import com.blooming.api.response.dto.WateringDayDTO;
 import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.service.google.FileGeneratorService;
@@ -74,10 +75,10 @@ public class DrPlantaController {
         if (user.isPresent()) {
             PlantIdentified plantIdentified = plantIdService.getPlantInformationByName(plantName, tokenPlant);
             plantIdentified.setUser(user.get());
-            plantIdentifiedService.register(plantIdentified);
+            PlantIdentifiedDTO dto = plantIdentifiedService.register(plantIdentified);
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.OK.name(),
-                    plantIdentified,
+                    dto,
                     HttpStatus.OK, request);
         } else {
             return new GlobalHandlerResponse().handleResponse(

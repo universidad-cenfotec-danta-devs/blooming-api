@@ -71,8 +71,7 @@ public class ParsingUtils {
         }
     }
 
-
-    public static PlantIdentified parsePlantDetails(ResponseEntity<String> response) {
+    public static PlantIdentified parsePlantDetails(ResponseEntity<String> response, String plantToken) {
         try {
             JsonNode plantDetailsNode = getJsonNodeFromResponseBody(response);
 
@@ -82,14 +81,15 @@ public class ParsingUtils {
             String bestLightCondition = plantDetailsNode.path(BEST_LIGHT_CONDITION).isNull() ? null : plantDetailsNode.path(BEST_LIGHT_CONDITION).asText();
             String bestSoilType = plantDetailsNode.path(BEST_SOIL_TYPE).isNull() ? null : plantDetailsNode.path(BEST_SOIL_TYPE).asText();
 
-            PlantIdentified dto = new PlantIdentified();
-            dto.setName(name);
-            dto.setWatering(watering);
-            dto.setBestWatering(bestWatering);
-            dto.setBestLightCondition(bestLightCondition);
-            dto.setBestSoilType(bestSoilType);
+            PlantIdentified plantIdentified = new PlantIdentified();
+            plantIdentified.setPlantToken(plantToken);
+            plantIdentified.setName(name);
+            plantIdentified.setWatering(watering);
+            plantIdentified.setBestWatering(bestWatering);
+            plantIdentified.setBestLightCondition(bestLightCondition);
+            plantIdentified.setBestSoilType(bestSoilType);
 
-            return dto;
+            return plantIdentified;
 
         } catch (Exception e) {
             throw new ParsingException("Error parsing plant details: " + e.getMessage());

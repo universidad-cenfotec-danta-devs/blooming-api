@@ -12,6 +12,8 @@ public class PlantIdentified {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(unique = true, nullable = false)
+    private String plantToken;
     private String name;
     private String imageURL;
     @Column(length = 1000)
