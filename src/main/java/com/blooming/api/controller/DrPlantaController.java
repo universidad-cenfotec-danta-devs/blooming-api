@@ -64,15 +64,15 @@ public class DrPlantaController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
-    @GetMapping("/savePlantIdentifiedByUser/{idAccessToken}")
+    @GetMapping("/savePlantIdentifiedByUser/{tokenPlant}")
     public ResponseEntity<?> savePlantIdentifiedByUser(@RequestParam("plantName") String plantName,
-                                                       @PathVariable("idAccessToken") String idAccessToken,
+                                                       @PathVariable("tokenPlant") String tokenPlant,
                                                        HttpServletRequest request) {
 
         String username = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
         Optional<User> user = userService.findByEmail(username);
         if (user.isPresent()) {
-            PlantIdentified plantIdentified = plantIdService.getPlantInformationByName(plantName, idAccessToken);
+            PlantIdentified plantIdentified = plantIdService.getPlantInformationByName(plantName, tokenPlant);
             plantIdentified.setUser(user.get());
             plantIdentifiedService.register(plantIdentified);
             return new GlobalHandlerResponse().handleResponse(

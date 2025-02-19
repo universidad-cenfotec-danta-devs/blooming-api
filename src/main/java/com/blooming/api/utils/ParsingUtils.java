@@ -3,8 +3,6 @@ package com.blooming.api.utils;
 import com.blooming.api.entity.PlantIdentified;
 import com.blooming.api.exception.ParsingException;
 import com.blooming.api.response.dto.*;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 public class ParsingUtils {
 
@@ -37,42 +34,47 @@ public class ParsingUtils {
     private static final String BEST_LIGHT_CONDITION = "best_light_condition";
     private static final String BEST_SOIL_TYPE = "best_soil_type";
 
-    public static Optional<List<PlantSuggestionDTO>> parsePlantSuggestions(String jsonResponse) {
+    public static List<PlantSuggestionDTO> parsePlantSuggestions(ResponseEntity<String> response) {
         try {
-            JsonNode root = objectMapper.readTree(jsonResponse);
+            JsonNode jsonNode = getJsonNodeFromResponseBody(response);
+
             List<PlantSuggestionDTO> suggestionsList = new ArrayList<>();
-            String idAccessToken = root.path(ACCESS_TOKEN).asText();
-            JsonNode suggestions = root.path(RESULT).path("classification").path(SUGGESTIONS);
-            for (JsonNode suggestion : suggestions) {
-                String name = suggestion.path(NAME).asText();
-                double probability = suggestion.path(PROBABILITY).asDouble();
-                String probabilityPercentage = String.format("%.0f%%", probability * 100);
+            String idAccessToken = jsonNode.path(ACCESS_TOKEN).asText("");
 
-                JsonNode firstImage = suggestion.path(SIMILAR_IMAGES).path(0);
-                String imageUrl = firstImage.path(URL).asText();
-                String imageUrlSmall = firstImage.path(URL_SMALL).asText();
-                double similarity = firstImage.path(SIMILARITY).asDouble();
-                String similarityPercentage = String.format("%.0f%%", similarity * 100);
+            JsonNode suggestions = jsonNode.path(RESULT).path("classification").path(SUGGESTIONS);
+            if (suggestions.isArray()) {
+                for (JsonNode suggestion : suggestions) {
+                    String name = suggestion.path(NAME).asText("");
+                    double probability = suggestion.path(PROBABILITY).asDouble(0.0);
+                    String probabilityPercentage = String.format("%.0f%%", probability * 100);
 
-                PlantSuggestionDTO dto = new PlantSuggestionDTO();
-                dto.setName(name);
-                dto.setIdAccessToken(idAccessToken);
-                dto.setProbabilityPercentage(probabilityPercentage);
-                dto.setSimilarityPercentage(similarityPercentage);
-                dto.setImageUrl(imageUrl);
-                dto.setImageUrlSmall(imageUrlSmall);
+                    JsonNode firstImage = suggestion.path(SIMILAR_IMAGES).path(0);
+                    String imageUrl = firstImage.path(URL).asText("");
+                    String imageUrlSmall = firstImage.path(URL_SMALL).asText("");
+                    double similarity = firstImage.path(SIMILARITY).asDouble(0.0);
+                    String similarityPercentage = String.format("%.0f%%", similarity * 100);
 
-                suggestionsList.add(dto);
+                    PlantSuggestionDTO dto = new PlantSuggestionDTO();
+                    dto.setName(name);
+                    dto.setIdAccessToken(idAccessToken);
+                    dto.setProbabilityPercentage(probabilityPercentage);
+                    dto.setSimilarityPercentage(similarityPercentage);
+                    dto.setImageUrl(imageUrl);
+                    dto.setImageUrlSmall(imageUrlSmall);
+
+                    suggestionsList.add(dto);
+                }
             }
-            return Optional.of(suggestionsList);
+            return suggestionsList;
         } catch (Exception e) {
             throw new ParsingException("Error parsing plant suggestions", e);
         }
     }
 
-    public static Optional<PlantIdentified> parsePlantDetails(String jsonResponse) {
+
+    public static PlantIdentified parsePlantDetails(ResponseEntity<String> response) {
         try {
-            JsonNode plantDetailsNode = objectMapper.readTree(jsonResponse);
+            JsonNode plantDetailsNode = getJsonNodeFromResponseBody(response);
 
             String name = plantDetailsNode.path(NAME).isNull() ? null : plantDetailsNode.path(NAME).asText();
             String watering = plantDetailsNode.path(WATERING).isNull() ? null : plantDetailsNode.path(WATERING).toString();
@@ -87,14 +89,10 @@ public class ParsingUtils {
             dto.setBestLightCondition(bestLightCondition);
             dto.setBestSoilType(bestSoilType);
 
-            return Optional.of(dto);
+            return dto;
 
-        } catch (JsonParseException e) {
-            throw new com.blooming.api.exception.ParsingException("Error parsing plant details: Invalid JSON format" + e.getMessage());
-        } catch (JsonMappingException e) {
-            throw new com.blooming.api.exception.ParsingException("Error mapping plant details: Missing expected fields" + e.getMessage());
         } catch (Exception e) {
-            throw new com.blooming.api.exception.ParsingException("Error parsing plant details: " + e.getMessage());
+            throw new ParsingException("Error parsing plant details: " + e.getMessage());
         }
     }
 
@@ -133,21 +131,26 @@ public class ParsingUtils {
     }
 
     public static PlantIdentifiedDTO toPlantIdentifiedDTO(PlantIdentified plant) {
-        return new PlantIdentifiedDTO(
-                plant.getId(),
-                plant.getName(),
-                plant.getWatering(),
-                plant.getBestWatering(),
-                plant.getBestLightCondition(),
-                plant.getBestSoilType()
-        );
+        try {
+            return new PlantIdentifiedDTO(
+                    plant.getId(),
+                    plant.getName(),
+                    plant.getWatering(),
+                    plant.getBestWatering(),
+                    plant.getBestLightCondition(),
+                    plant.getBestSoilType()
+            );
+        } catch (Exception e) {
+            throw new ParsingException(e.getMessage());
+        }
+
     }
 
     public static JsonNode getJsonNodeFromResponseBody(ResponseEntity<String> response) {
         try {
             return objectMapper.readTree(response.getBody());
         } catch (Exception e) {
-            throw new com.blooming.api.exception.ParsingException("Error parsing response", e);
+            throw new ParsingException("Error parsing response", e);
         }
     }
 
@@ -174,8 +177,8 @@ public class ParsingUtils {
                 }
             }
         } catch (Exception e) {
-            throw new com.blooming.api.exception.ParsingException("Error parsing JSON response", e);
+            throw new ParsingException("Error parsing JSON response", e);
         }
-        return null;
+        return "";
     }
 }

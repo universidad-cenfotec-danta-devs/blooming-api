@@ -13,7 +13,9 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.RestClientException;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,6 +29,40 @@ public class GlobalExceptionHandler {
         logger.error("Entity not found: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
     }
+
+    @ExceptionHandler(RestClientException.class)
+    public ResponseEntity<String> handleRestClientException(RestClientException ex) {
+        logger.error("Error with external service: {}", ex.getMessage(), ex);
+
+        String message = ex.getMessage();
+        HttpStatus status;
+        String errorMessage;
+
+        if (message.contains("timeout")) {
+            status = HttpStatus.REQUEST_TIMEOUT;
+            errorMessage = "The external service timed out. Please try again later.";
+        } else if (message.contains("404")) {
+            status = HttpStatus.NOT_FOUND;
+            errorMessage = "The requested resource was not found in the external service.";
+        } else if (message.contains("500")) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+            errorMessage = "The external service encountered an error. Please try again later.";
+        } else {
+            status = HttpStatus.BAD_GATEWAY;
+            errorMessage = "There was an issue with the external service. Please try again later.";
+        }
+
+        return ResponseEntity.status(status).body(errorMessage);
+    }
+
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<Map<String, String>> handleIOException(IOException ex) {
+        Map<String, String> errorDetails = new HashMap<>();
+        errorDetails.put("error", "There was an error processing the request. Please try again later.");
+        logger.error("IO error: {}", ex.getMessage());
+        return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
 
     @ExceptionHandler(ParsingException.class)
     public <T> ResponseEntity<T> handleParsingException(ParsingException ex) {

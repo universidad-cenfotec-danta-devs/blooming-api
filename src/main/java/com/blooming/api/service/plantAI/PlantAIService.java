@@ -5,12 +5,14 @@ import com.blooming.api.entity.PlantIdentified;
 import com.blooming.api.response.dto.WateringDayDTO;
 import com.blooming.api.response.dto.PlantSuggestionDTO;
 import com.blooming.api.utils.ParsingUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.ZoneOffset;
@@ -44,6 +46,7 @@ public class PlantAIService implements IPlantAIService {
 
     @Override
     public List<PlantSuggestionDTO> identifyImage(byte[] bytesImg) {
+
         String base64Image = Base64.getEncoder().encodeToString(bytesImg);
         String jsonBody = """
                 {
@@ -51,60 +54,51 @@ public class PlantAIService implements IPlantAIService {
                     "similar_images": true
                 }
                 """.formatted(base64Image);
-
         HttpHeaders headers = createHeaders();
         var requestEntity = new HttpEntity<>(jsonBody, headers);
-        ResponseEntity<String> response = restTemplate.exchange(apiIdentifyUrl, HttpMethod.POST, requestEntity, String.class);
-
-        return ParsingUtils.parsePlantSuggestions(response.getBody())
-                .orElseThrow(() -> new ParsingException("Error parsing plant suggestion"));
+        ResponseEntity<String> response = makeRequestToPlantAI(apiIdentifyUrl, HttpMethod.POST, requestEntity);
+        return ParsingUtils.parsePlantSuggestions(response);
     }
 
 
     @Override
-    public PlantIdentified getPlantInformationByName(String plantName, String idAccessToken) {
-        String accessTokenForDetails = searchPlantByScientificName(plantName)
-                .orElseThrow(() -> new EntityNotFoundException("Plant not found with scientific name: " + plantName));
+    public PlantIdentified getPlantInformationByName(String plantName, String tokenPlant) {
+        String accessTokenForDetails = searchPlantByScientificName(plantName).orElseThrow(() -> new EntityNotFoundException("Plant not found with scientific name: " + plantName));
         var headers = createHeaders();
         var requestEntity = new HttpEntity<>(headers);
         String url = apiPlantBaseUrl + accessTokenForDetails + DETAIL_PARAMS;
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
-        PlantIdentified plantIdentified = ParsingUtils.parsePlantDetails(response.getBody())
-                .orElseThrow(() -> new ParsingException("Error parsing plant: " + plantName));
+        ResponseEntity<String> response = makeRequestToPlantAI(url, HttpMethod.GET, requestEntity);
+        PlantIdentified plantIdentified = ParsingUtils.parsePlantDetails(response);
         //TODO: String s3ImageURL= S3Service.saveImage(...)
         //TODO: plantIdentified.setImageURL(s3ImageURL)
         if (plantIdentified.getWatering() == null) {
-            plantIdentified.setWatering(generateWateringValues(idAccessToken, headers).orElseThrow(() -> new EntityNotFoundException("Watering not found")));
+            plantIdentified.setWatering(generateWateringValues(tokenPlant, headers));
         }
         return plantIdentified;
+
     }
 
-    private Optional<String> generateWateringValues(String accessToken, HttpHeaders headers) {
+    private String generateWateringValues(String suggestionToken, HttpHeaders headers) {
         String jsonBody = """
                 {
                     "question": "The watering of this plant is dry(1), medium(2) or wet(3)?",
                     "prompt": "Return only the values 'min' and 'max' in valid JSON format. No extra text."
                 }
                 """;
-
         var requestEntity = new HttpEntity<>(jsonBody, headers);
-        try {
-            ResponseEntity<String> response = restTemplate.exchange(buildAskPlantIdUrl(accessToken), HttpMethod.POST, requestEntity, String.class);
-            JsonNode jsonNode = ParsingUtils.getJsonNodeFromResponseBody(response);
-            JsonNode messages = jsonNode.path("messages");
-            String wateringInfo = "";
 
-            for (JsonNode message : messages) {
-                if ("answer".equals(message.path("type").asText())) {
-                    wateringInfo = message.path("content").asText();
-                    break;
-                }
+        ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(suggestionToken), HttpMethod.POST, requestEntity);
+        JsonNode jsonNode = ParsingUtils.getJsonNodeFromResponseBody(response);
+        JsonNode messages = jsonNode.path("messages");
+        String wateringInfo = "";
+
+        for (JsonNode message : messages) {
+            if ("answer".equals(message.path("type").asText())) {
+                wateringInfo = message.path("content").asText();
+                break;
             }
-
-            return Optional.ofNullable(wateringInfo);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
+        return wateringInfo;
     }
 
     @Override
@@ -119,9 +113,8 @@ public class PlantAIService implements IPlantAIService {
                 """, currentDate, currentDate);
 
         var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
-        ResponseEntity<String> response = restTemplate.exchange(buildAskPlantIdUrl(idAccessToken), HttpMethod.POST, requestEntity, String.class);
+        ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(idAccessToken), HttpMethod.POST, requestEntity);
         String wateringDates = ParsingUtils.parseWateringDatesToString(response);
-        assert wateringDates != null;
         return Arrays.asList(wateringDates.trim().split("\n"));
     }
 
@@ -136,7 +129,7 @@ public class PlantAIService implements IPlantAIService {
 
         var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
         requestEntity = new HttpEntity<>(jsonBody, createHeaders());
-        ResponseEntity<String> response = restTemplate.exchange(buildAskPlantIdUrl(idAccessToken), HttpMethod.POST, requestEntity, String.class);
+        ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(idAccessToken), HttpMethod.POST, requestEntity);
         return ParsingUtils.parseWateringDays(response);
     }
 
@@ -151,37 +144,41 @@ public class PlantAIService implements IPlantAIService {
 
         HttpHeaders headers = createHeaders();
         HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, headers);
-        ResponseEntity<String> response = restTemplate.exchange(buildAskPlantIdUrl(idAccessToken), HttpMethod.POST, requestEntity, String.class);
+        ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(idAccessToken), HttpMethod.POST, requestEntity);
+
 
         JsonNode jsonNode = ParsingUtils.getJsonNodeFromResponseBody(response);
-
         return ParsingUtils.getLastAnswerFromResponse(jsonNode);
     }
 
 
     private Optional<String> searchPlantByScientificName(String plantName) {
+
+        HttpHeaders headers = createHeaders();
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+        String url = apiPlantSearchUrl + plantName;
+        ResponseEntity<String> response = makeRequestToPlantAI(url, HttpMethod.GET, requestEntity);
+
         try {
-            HttpHeaders headers = createHeaders();
-            HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
-            String url = apiPlantSearchUrl + plantName;
-
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
-
-            String accessToken = new ObjectMapper()
-                    .readTree(response.getBody())
-                    .path("entities")
-                    .path(0)
-                    .path("access_token")
-                    .asText(null);
-
+            String accessToken = new ObjectMapper().readTree(response.getBody()).path("entities").path(0).path("access_token").asText(null);
             return Optional.ofNullable(accessToken);
-        } catch (Exception e) {
-            return Optional.empty();
+        } catch (JsonProcessingException e) {
+            throw new ParsingException(e.getMessage());
         }
     }
 
     private String buildAskPlantIdUrl(String idAccessToken) {
         return apiIdentifyUrl + "/" + idAccessToken + "/conversation";
+    }
+
+    private ResponseEntity<String> makeRequestToPlantAI(String url, HttpMethod method, HttpEntity<?> requestEntity) {
+        try {
+            return restTemplate.exchange(url, method, requestEntity, String.class);
+        } catch (RestClientException e) {
+            throw new RestClientException(e.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected error: " + e.getMessage(), e);
+        }
     }
 
     private HttpHeaders createHeaders() {
