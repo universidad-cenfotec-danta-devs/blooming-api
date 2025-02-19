@@ -18,21 +18,40 @@ public class ParsingUtils {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
+    private static final String MESSAGES = "messages";
+    private static final String CONTENT = "content";
+    private static final String WATERING_RECOMMENDATIONS = "wateringRecommendations:";
+    private static final String WATERING_SCHEDULE = "wateringSchedule:";
+    private static final String ANSWER = "answer";
+    private static final String RESULT = "result";
+    private static final String SUGGESTIONS = "suggestions";
+    private static final String ACCESS_TOKEN = "access_token";
+    private static final String SIMILAR_IMAGES = "similar_images";
+    private static final String URL = "url";
+    private static final String URL_SMALL = "url_small";
+    private static final String PROBABILITY = "probability";
+    private static final String SIMILARITY = "similarity";
+    private static final String NAME = "name";
+    private static final String WATERING = "watering";
+    private static final String BEST_WATERING = "best_watering";
+    private static final String BEST_LIGHT_CONDITION = "best_light_condition";
+    private static final String BEST_SOIL_TYPE = "best_soil_type";
+
     public static Optional<List<PlantSuggestionDTO>> parsePlantSuggestions(String jsonResponse) {
         try {
             JsonNode root = objectMapper.readTree(jsonResponse);
             List<PlantSuggestionDTO> suggestionsList = new ArrayList<>();
-            String idAccessToken = root.path("access_token").asText();
-            JsonNode suggestions = root.path("result").path("classification").path("suggestions");
+            String idAccessToken = root.path(ACCESS_TOKEN).asText();
+            JsonNode suggestions = root.path(RESULT).path("classification").path(SUGGESTIONS);
             for (JsonNode suggestion : suggestions) {
-                String name = suggestion.path("name").asText();
-                double probability = suggestion.path("probability").asDouble();
+                String name = suggestion.path(NAME).asText();
+                double probability = suggestion.path(PROBABILITY).asDouble();
                 String probabilityPercentage = String.format("%.0f%%", probability * 100);
 
-                JsonNode firstImage = suggestion.path("similar_images").path(0);
-                String imageUrl = firstImage.path("url").asText();
-                String imageUrlSmall = firstImage.path("url_small").asText();
-                double similarity = firstImage.path("similarity").asDouble();
+                JsonNode firstImage = suggestion.path(SIMILAR_IMAGES).path(0);
+                String imageUrl = firstImage.path(URL).asText();
+                String imageUrlSmall = firstImage.path(URL_SMALL).asText();
+                double similarity = firstImage.path(SIMILARITY).asDouble();
                 String similarityPercentage = String.format("%.0f%%", similarity * 100);
 
                 PlantSuggestionDTO dto = new PlantSuggestionDTO();
@@ -55,11 +74,11 @@ public class ParsingUtils {
         try {
             JsonNode plantDetailsNode = objectMapper.readTree(jsonResponse);
 
-            String name = plantDetailsNode.path("name").isNull() ? null : plantDetailsNode.path("name").asText();
-            String watering = plantDetailsNode.path("watering").isNull() ? null : plantDetailsNode.path("watering").toString();
-            String bestWatering = plantDetailsNode.path("best_watering").isNull() ? null : plantDetailsNode.path("best_watering").asText();
-            String bestLightCondition = plantDetailsNode.path("best_light_condition").isNull() ? null : plantDetailsNode.path("best_light_condition").asText();
-            String bestSoilType = plantDetailsNode.path("best_soil_type").isNull() ? null : plantDetailsNode.path("best_soil_type").asText();
+            String name = plantDetailsNode.path(NAME).isNull() ? null : plantDetailsNode.path(NAME).asText();
+            String watering = plantDetailsNode.path(WATERING).isNull() ? null : plantDetailsNode.path(WATERING).toString();
+            String bestWatering = plantDetailsNode.path(BEST_WATERING).isNull() ? null : plantDetailsNode.path(BEST_WATERING).asText();
+            String bestLightCondition = plantDetailsNode.path(BEST_LIGHT_CONDITION).isNull() ? null : plantDetailsNode.path(BEST_LIGHT_CONDITION).asText();
+            String bestSoilType = plantDetailsNode.path(BEST_SOIL_TYPE).isNull() ? null : plantDetailsNode.path(BEST_SOIL_TYPE).asText();
 
             PlantIdentified dto = new PlantIdentified();
             dto.setName(name);
@@ -81,21 +100,19 @@ public class ParsingUtils {
 
     public static List<WateringDayDTO> parseWateringDays(ResponseEntity<String> response) {
         List<WateringDayDTO> wateringDays = new ArrayList<>();
-        ObjectMapper objectMapper = new ObjectMapper();
-
         try {
             JsonNode root = objectMapper.readTree(response.getBody());
-            JsonNode messages = root.path("messages");
+            JsonNode messages = root.path(MESSAGES);
 
             for (JsonNode message : messages) {
-                String content = message.path("content").asText();
-                if (content.startsWith("wateringRecommendations:")) {
+                String content = message.path(CONTENT).asText();
+                if (content.startsWith(WATERING_RECOMMENDATIONS)) {
                     String[] lines = content.split("\n");
 
-                    for (int i = 1; i < lines.length; i++) { // Omitir la primera línea
+                    for (int i = 1; i < lines.length; i++) { // Skip first line
                         String[] parts = lines[i].split(": ", 2);
                         if (parts.length == 2) {
-                            String dateTimeStr = parts[0]; // Formato: yyyyMMddTHHmmssZ
+                            String dateTimeStr = parts[0]; // Format: yyyyMMddTHHmmssZ
                             String recommendation = parts[1];
 
                             int year = Integer.parseInt(dateTimeStr.substring(0, 4));
@@ -116,7 +133,7 @@ public class ParsingUtils {
     }
 
     public static PlantIdentifiedDTO toPlantIdentifiedDTO(PlantIdentified plant) {
-        PlantIdentifiedDTO dto = new PlantIdentifiedDTO(
+        return new PlantIdentifiedDTO(
                 plant.getId(),
                 plant.getName(),
                 plant.getWatering(),
@@ -124,12 +141,10 @@ public class ParsingUtils {
                 plant.getBestLightCondition(),
                 plant.getBestSoilType()
         );
-        return dto;
     }
 
     public static JsonNode getJsonNodeFromResponseBody(ResponseEntity<String> response) {
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.readTree(response.getBody());
         } catch (Exception e) {
             throw new com.blooming.api.exception.ParsingException("Error parsing response", e);
@@ -137,12 +152,12 @@ public class ParsingUtils {
     }
 
     public static String getLastAnswerFromResponse(JsonNode rootNode) {
-        JsonNode messages = rootNode.path("messages");
+        JsonNode messages = rootNode.path(MESSAGES);
         String lastAnswer = null;
         for (int i = messages.size() - 1; i >= 0; i--) {
             JsonNode message = messages.get(i);
-            if ("answer".equals(message.path("type").asText())) {
-                lastAnswer = message.path("content").asText();
+            if (ANSWER.equals(message.path("type").asText())) {
+                lastAnswer = message.path(CONTENT).asText();
                 break;
             }
         }
@@ -151,12 +166,11 @@ public class ParsingUtils {
 
     public static String parseWateringDatesToString(ResponseEntity<String> response) {
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
             ApiResponseDTO apiResponse = objectMapper.readValue(response.getBody(), ApiResponseDTO.class);
 
             for (MessageDTO message : apiResponse.getMessages()) {
-                if ("answer".equals(message.getType()) && message.getContent().startsWith("wateringSchedule:")) {
-                    return message.getContent().replace("wateringSchedule:", "").trim();
+                if (ANSWER.equals(message.getType()) && message.getContent().startsWith(WATERING_SCHEDULE)) {
+                    return message.getContent().replace(WATERING_SCHEDULE, "").trim();
                 }
             }
         } catch (Exception e) {
