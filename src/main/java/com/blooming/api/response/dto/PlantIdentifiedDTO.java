@@ -8,15 +8,17 @@ import lombok.Setter;
 public class PlantIdentifiedDTO {
     private Long id;
     private String name;
-    private String watering;
+    private int minWatering;
+    private int maxWatering;
     private String bestWatering;
     private String bestLightCondition;
     private String bestSoilType;
 
-    public PlantIdentifiedDTO(Long id,String name, String watering, String bestWatering, String bestLightCondition, String bestSoilType) {
+    public PlantIdentifiedDTO(Long id, String name, int minWatering, int maxWatering, String bestWatering, String bestLightCondition, String bestSoilType) {
         this.id = id;
         this.name = name;
-        this.watering = watering;
+        this.minWatering = minWatering;
+        this.maxWatering = maxWatering;
         this.bestWatering = bestWatering;
         this.bestLightCondition = bestLightCondition;
         this.bestSoilType = bestSoilType;

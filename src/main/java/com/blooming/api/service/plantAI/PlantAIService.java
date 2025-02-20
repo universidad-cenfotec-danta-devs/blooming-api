@@ -71,11 +71,13 @@ public class PlantAIService implements IPlantAIService {
         PlantIdentified plantIdentified = ParsingUtils.parsePlantDetails(response, tokenPlant);
         //TODO: String s3ImageURL= S3Service.saveImage(...)
         //TODO: plantIdentified.setImageURL(s3ImageURL)
-        if (plantIdentified.getWatering() == null) {
-            plantIdentified.setWatering(generateWateringValues(tokenPlant, headers));
+        if (plantIdentified.getMinWatering() == 0 || plantIdentified.getMaxWatering() == 0) {
+            String wateringValues = generateWateringValues(tokenPlant, headers);
+            JsonNode wateringNode = wateringValuesToJsonNode(wateringValues);
+            plantIdentified.setMinWatering(wateringNode.path("min").asInt());
+            plantIdentified.setMaxWatering(wateringNode.path("max").asInt());
         }
         return plantIdentified;
-
     }
 
     private String generateWateringValues(String suggestionToken, HttpHeaders headers) {
@@ -119,7 +121,7 @@ public class PlantAIService implements IPlantAIService {
     }
 
     @Override
-    public List<WateringDayDTO> generateWateringDays(String idAccessToken, List<String> wateringDates) {
+    public List<WateringDayDTO> generateWateringDays(String tokenPlant, List<String> wateringDates) {
         String jsonBody = String.format("""
                 {
                     "question": "Start content with value wateringRecommendations: then generate recommendations for each date based on this list generated for watering using the watering, bestWatering, bestLightCondition, and bestSoilType values and all of the others. %s",
@@ -129,7 +131,7 @@ public class PlantAIService implements IPlantAIService {
 
         var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
         requestEntity = new HttpEntity<>(jsonBody, createHeaders());
-        ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(idAccessToken), HttpMethod.POST, requestEntity);
+        ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(tokenPlant), HttpMethod.POST, requestEntity);
         return ParsingUtils.parseWateringDays(response);
     }
 
@@ -167,8 +169,8 @@ public class PlantAIService implements IPlantAIService {
         }
     }
 
-    private String buildAskPlantIdUrl(String idAccessToken) {
-        return apiIdentifyUrl + "/" + idAccessToken + "/conversation";
+    private String buildAskPlantIdUrl(String token) {
+        return apiIdentifyUrl + "/" + token + "/conversation";
     }
 
     private ResponseEntity<String> makeRequestToPlantAI(String url, HttpMethod method, HttpEntity<?> requestEntity) {
@@ -178,6 +180,15 @@ public class PlantAIService implements IPlantAIService {
             throw new RestClientException(e.getMessage());
         } catch (Exception e) {
             throw new RuntimeException("Unexpected error: " + e.getMessage(), e);
+        }
+    }
+
+    private JsonNode wateringValuesToJsonNode(String wateringValues) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readTree(wateringValues);
+        } catch (JsonProcessingException e) {
+            throw new ParsingException(e.getMessage());
         }
     }
 

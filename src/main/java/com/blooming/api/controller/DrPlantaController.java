@@ -90,18 +90,18 @@ public class DrPlantaController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
-    @PostMapping("/generateSchedule/{idAccessToken}/{plantId}")
-    public ResponseEntity<?> generateWateringPlan(@PathVariable("idAccessToken") String idAccessToken,
-                                                  @PathVariable("plantId") Long plantId,
+    @PostMapping("/generateSchedule/{id}")
+    public ResponseEntity<?> generateWateringPlan(@PathVariable("id") Long plantId,
                                                   HttpServletRequest request) {
 
         String username = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
         Optional<User> user = userService.findByEmail(username);
         PlantIdentified plantIdentified = plantIdentifiedService.getById(plantId);
+        String tokenPlant = plantIdentified.getPlantToken();
         if (user.isPresent()) {
-            List<String> wateringSchedule = plantIdService.generateWateringSchedule(idAccessToken);
+            List<String> wateringSchedule = plantIdService.generateWateringSchedule(tokenPlant);
             fileGeneratorService.generateGoogleCalendarFile(wateringSchedule);
-            List<WateringDayDTO> wateringDays = plantIdService.generateWateringDays(idAccessToken, wateringSchedule);
+            List<WateringDayDTO> wateringDays = plantIdService.generateWateringDays(tokenPlant, wateringSchedule);
             WateringPlan wateringPlan = wateringPlanService.register(wateringDays, plantIdentified);
             fileGeneratorService.generateWateringPlanPdf(wateringPlan);
             return new GlobalHandlerResponse().handleResponse(

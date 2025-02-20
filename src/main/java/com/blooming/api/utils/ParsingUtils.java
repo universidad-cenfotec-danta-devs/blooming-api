@@ -77,6 +77,17 @@ public class ParsingUtils {
 
             String name = plantDetailsNode.path(NAME).isNull() ? null : plantDetailsNode.path(NAME).asText();
             String watering = plantDetailsNode.path(WATERING).isNull() ? null : plantDetailsNode.path(WATERING).toString();
+
+            int maxWatering = 0;
+            int minWatering = 0;
+
+            if (watering != null) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode wateringNode = objectMapper.readTree(watering);
+                maxWatering = wateringNode.path("max").asInt();
+                minWatering = wateringNode.path("min").asInt();
+            }
+
             String bestWatering = plantDetailsNode.path(BEST_WATERING).isNull() ? null : plantDetailsNode.path(BEST_WATERING).asText();
             String bestLightCondition = plantDetailsNode.path(BEST_LIGHT_CONDITION).isNull() ? null : plantDetailsNode.path(BEST_LIGHT_CONDITION).asText();
             String bestSoilType = plantDetailsNode.path(BEST_SOIL_TYPE).isNull() ? null : plantDetailsNode.path(BEST_SOIL_TYPE).asText();
@@ -84,7 +95,8 @@ public class ParsingUtils {
             PlantIdentified plantIdentified = new PlantIdentified();
             plantIdentified.setPlantToken(plantToken);
             plantIdentified.setName(name);
-            plantIdentified.setWatering(watering);
+            plantIdentified.setMinWatering(minWatering);
+            plantIdentified.setMaxWatering(maxWatering);
             plantIdentified.setBestWatering(bestWatering);
             plantIdentified.setBestLightCondition(bestLightCondition);
             plantIdentified.setBestSoilType(bestSoilType);
@@ -135,7 +147,8 @@ public class ParsingUtils {
             return new PlantIdentifiedDTO(
                     plant.getId(),
                     plant.getName(),
-                    plant.getWatering(),
+                    plant.getMinWatering(),
+                    plant.getMaxWatering(),
                     plant.getBestWatering(),
                     plant.getBestLightCondition(),
                     plant.getBestSoilType()
