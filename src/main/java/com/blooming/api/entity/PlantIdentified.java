@@ -16,16 +16,6 @@ public class PlantIdentified {
     private String plantToken;
     private String name;
     private String imageURL;
-    @Column(length = 1000)
-    private String bestWatering;
-    @Column(length = 1000)
-    private String bestLightCondition;
-    @Column(length = 1000)
-    private String bestSoilType;
-    @Column
-    private int maxWatering;
-    @Column
-    private int minWatering;
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

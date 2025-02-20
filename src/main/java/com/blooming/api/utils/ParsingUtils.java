@@ -3,7 +3,6 @@ package com.blooming.api.utils;
 import com.blooming.api.entity.PlantIdentified;
 import com.blooming.api.exception.ParsingException;
 import com.blooming.api.response.dto.*;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
@@ -30,10 +29,6 @@ public class ParsingUtils {
     private static final String PROBABILITY = "probability";
     private static final String SIMILARITY = "similarity";
     private static final String NAME = "name";
-    private static final String WATERING = "watering";
-    private static final String BEST_WATERING = "best_watering";
-    private static final String BEST_LIGHT_CONDITION = "best_light_condition";
-    private static final String BEST_SOIL_TYPE = "best_soil_type";
 
     public static List<PlantSuggestionDTO> parsePlantSuggestions(ResponseEntity<String> response) {
         try {
@@ -72,45 +67,15 @@ public class ParsingUtils {
         }
     }
 
-    public static JsonNode wateringValuesToJsonNode(String wateringValues) {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.readTree(wateringValues);
-        } catch (JsonProcessingException e) {
-            throw new ParsingException(e.getMessage());
-        }
-    }
-
     public static PlantIdentified parsePlantDetails(ResponseEntity<String> response, String plantToken) {
         try {
             JsonNode plantDetailsNode = getJsonNodeFromResponseBody(response);
 
             String name = plantDetailsNode.path(NAME).isNull() ? null : plantDetailsNode.path(NAME).asText();
-            String watering = plantDetailsNode.path(WATERING).isNull() ? null : plantDetailsNode.path(WATERING).toString();
-
-            int maxWatering = 0;
-            int minWatering = 0;
-
-            if (watering != null) {
-                ObjectMapper objectMapper = new ObjectMapper();
-                JsonNode wateringNode = objectMapper.readTree(watering);
-                maxWatering = wateringNode.path("max").asInt();
-                minWatering = wateringNode.path("min").asInt();
-            }
-
-            String bestWatering = plantDetailsNode.path(BEST_WATERING).isNull() ? null : plantDetailsNode.path(BEST_WATERING).asText();
-            String bestLightCondition = plantDetailsNode.path(BEST_LIGHT_CONDITION).isNull() ? null : plantDetailsNode.path(BEST_LIGHT_CONDITION).asText();
-            String bestSoilType = plantDetailsNode.path(BEST_SOIL_TYPE).isNull() ? null : plantDetailsNode.path(BEST_SOIL_TYPE).asText();
 
             PlantIdentified plantIdentified = new PlantIdentified();
             plantIdentified.setPlantToken(plantToken);
             plantIdentified.setName(name);
-            plantIdentified.setMinWatering(minWatering);
-            plantIdentified.setMaxWatering(maxWatering);
-            plantIdentified.setBestWatering(bestWatering);
-            plantIdentified.setBestLightCondition(bestLightCondition);
-            plantIdentified.setBestSoilType(bestSoilType);
-
             return plantIdentified;
 
         } catch (Exception e) {
@@ -156,12 +121,7 @@ public class ParsingUtils {
         try {
             return new PlantIdentifiedDTO(
                     plant.getId(),
-                    plant.getName(),
-                    plant.getMinWatering(),
-                    plant.getMaxWatering(),
-                    plant.getBestWatering(),
-                    plant.getBestLightCondition(),
-                    plant.getBestSoilType()
+                    plant.getName()
             );
         } catch (Exception e) {
             throw new ParsingException(e.getMessage());

@@ -69,40 +69,39 @@ public class PlantAIService implements IPlantAIService {
         var requestEntity = new HttpEntity<>(headers);
         String url = apiPlantBaseUrl + accessTokenForDetails + DETAIL_PARAMS;
         ResponseEntity<String> response = makeRequestToPlantAI(url, HttpMethod.GET, requestEntity);
-        PlantIdentified plantIdentified = ParsingUtils.parsePlantDetails(response, tokenPlant);
         //TODO: String s3ImageURL= S3Service.saveImage(...)
         //TODO: plantIdentified.setImageURL(s3ImageURL)
-        if (plantIdentified.getMinWatering() == 0 || plantIdentified.getMaxWatering() == 0) {
-            String wateringValues = generateWateringValues(tokenPlant, headers);
-            JsonNode wateringNode = ParsingUtils.wateringValuesToJsonNode(wateringValues);
-            plantIdentified.setMinWatering(wateringNode.path("min").asInt());
-            plantIdentified.setMaxWatering(wateringNode.path("max").asInt());
-        }
-        return plantIdentified;
+//        if (plantIdentified.getMinWatering() == 0 || plantIdentified.getMaxWatering() == 0) {
+//            String wateringValues = generateWateringValues(tokenPlant, headers);
+//            JsonNode wateringNode = ParsingUtils.wateringValuesToJsonNode(wateringValues);
+//            plantIdentified.setMinWatering(wateringNode.path("min").asInt());
+//            plantIdentified.setMaxWatering(wateringNode.path("max").asInt());
+//        }
+        return ParsingUtils.parsePlantDetails(response, tokenPlant);
     }
 
-    private String generateWateringValues(String suggestionToken, HttpHeaders headers) {
-        String jsonBody = """
-                {
-                    "question": "The watering of this plant is dry(1), medium(2) or wet(3)?",
-                    "prompt": "Return only the values 'min' and 'max' in valid JSON format. No extra text."
-                }
-                """;
-        var requestEntity = new HttpEntity<>(jsonBody, headers);
-
-        ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(suggestionToken), HttpMethod.POST, requestEntity);
-        JsonNode jsonNode = ParsingUtils.getJsonNodeFromResponseBody(response);
-        JsonNode messages = jsonNode.path("messages");
-        String wateringInfo = "";
-
-        for (JsonNode message : messages) {
-            if ("answer".equals(message.path("type").asText())) {
-                wateringInfo = message.path("content").asText();
-                break;
-            }
-        }
-        return wateringInfo;
-    }
+//    private String generateWateringValues(String suggestionToken, HttpHeaders headers) {
+//        String jsonBody = """
+//                {
+//                    "question": "The watering of this plant is dry(1), medium(2) or wet(3)?",
+//                    "prompt": "Return only the values 'min' and 'max' in valid JSON format. No extra text."
+//                }
+//                """;
+//        var requestEntity = new HttpEntity<>(jsonBody, headers);
+//
+//        ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(suggestionToken), HttpMethod.POST, requestEntity);
+//        JsonNode jsonNode = ParsingUtils.getJsonNodeFromResponseBody(response);
+//        JsonNode messages = jsonNode.path("messages");
+//        String wateringInfo = "";
+//
+//        for (JsonNode message : messages) {
+//            if ("answer".equals(message.path("type").asText())) {
+//                wateringInfo = message.path("content").asText();
+//                break;
+//            }
+//        }
+//        return wateringInfo;
+//    }
 
     @Override
     public List<String> generateWateringSchedule(String idAccessToken) {
