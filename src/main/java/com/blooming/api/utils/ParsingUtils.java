@@ -97,25 +97,31 @@ public class ParsingUtils {
                     for (int i = 1; i < lines.length; i++) { // Skip first line
                         String[] parts = lines[i].split(": ", 2);
                         if (parts.length == 2) {
-                            String dateTimeStr = parts[0]; // Format: yyyyMMddTHHmmssZ
+                            String dateTimeStr = parts[0].trim(); // Remueve espacios en blanco
                             String recommendation = parts[1];
 
-                            int year = Integer.parseInt(dateTimeStr.substring(0, 4));
-                            int month = Integer.parseInt(dateTimeStr.substring(4, 6));
-                            int day = Integer.parseInt(dateTimeStr.substring(6, 8));
+                            // Validar si la fecha tiene al menos 8 caracteres numéricos
+                            if (dateTimeStr.matches("\\d{8}.*")) {
+                                int year = Integer.parseInt(dateTimeStr.substring(0, 4));
+                                int month = Integer.parseInt(dateTimeStr.substring(4, 6));
+                                int day = Integer.parseInt(dateTimeStr.substring(6, 8));
 
-                            wateringDays.add(new WateringDayDTO(day, month, year, recommendation));
+                                wateringDays.add(new WateringDayDTO(day, month, year, recommendation));
+                            } else {
+                                throw new ParsingException("Formato de fecha inválido: " + dateTimeStr);
+                            }
                         }
                     }
                     break;
                 }
             }
         } catch (Exception e) {
-            throw new ParsingException(e.getMessage());
+            throw new ParsingException("Error parsing WateringDays: " + e.getMessage());
         }
 
         return wateringDays;
     }
+
 
     public static PlantIdentifiedDTO toPlantIdentifiedDTO(PlantIdentified plant) {
         try {

@@ -25,7 +25,7 @@ import java.util.*;
 public class PlantAIService implements IPlantAIService {
 
     public static final String API_KEY_HEADER = "Api-Key";
-    public static final String DETAIL_PARAMS = "?details=watering,best_watering,best_light_condition,best_soil_type";
+    public static final String DETAIL_PARAMS = "?details=watering,best_watering,best_light_condition,best_soil_type&language=es";
 
     private final RestTemplate restTemplate;
 
@@ -71,37 +71,9 @@ public class PlantAIService implements IPlantAIService {
         ResponseEntity<String> response = makeRequestToPlantAI(url, HttpMethod.GET, requestEntity);
         //TODO: String s3ImageURL= S3Service.saveImage(...)
         //TODO: plantIdentified.setImageURL(s3ImageURL)
-//        if (plantIdentified.getMinWatering() == 0 || plantIdentified.getMaxWatering() == 0) {
-//            String wateringValues = generateWateringValues(tokenPlant, headers);
-//            JsonNode wateringNode = ParsingUtils.wateringValuesToJsonNode(wateringValues);
-//            plantIdentified.setMinWatering(wateringNode.path("min").asInt());
-//            plantIdentified.setMaxWatering(wateringNode.path("max").asInt());
-//        }
+
         return ParsingUtils.parsePlantDetails(response, tokenPlant);
     }
-
-//    private String generateWateringValues(String suggestionToken, HttpHeaders headers) {
-//        String jsonBody = """
-//                {
-//                    "question": "The watering of this plant is dry(1), medium(2) or wet(3)?",
-//                    "prompt": "Return only the values 'min' and 'max' in valid JSON format. No extra text."
-//                }
-//                """;
-//        var requestEntity = new HttpEntity<>(jsonBody, headers);
-//
-//        ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(suggestionToken), HttpMethod.POST, requestEntity);
-//        JsonNode jsonNode = ParsingUtils.getJsonNodeFromResponseBody(response);
-//        JsonNode messages = jsonNode.path("messages");
-//        String wateringInfo = "";
-//
-//        for (JsonNode message : messages) {
-//            if ("answer".equals(message.path("type").asText())) {
-//                wateringInfo = message.path("content").asText();
-//                break;
-//            }
-//        }
-//        return wateringInfo;
-//    }
 
     @Override
     public List<String> generateWateringSchedule(String idAccessToken) {
@@ -123,11 +95,11 @@ public class PlantAIService implements IPlantAIService {
     @Override
     public List<WateringDayDTO> generateWateringDays(String tokenPlant, List<String> wateringDates) {
         String jsonBody = String.format("""
-                {
-                    "question": "Start content with value wateringRecommendations: then generate recommendations for each date based on this list generated for watering using the watering, bestWatering, bestLightCondition, and bestSoilType values and all of the others. %s",
-                    "prompt": "Only include dates in format yyyy-MM-dd that are after today. No extra text. No special characters like asterisks. Start answer content with text wateringRecommendations: "
-                }
-                """, wateringDates);
+            {
+                "question": "Start content with value wateringRecommendations: then generate recommendations for each date based on this list generated for watering using the watering, bestWatering, bestLightCondition, and bestSoilType values and all of the others. Answer in spanish. %s",
+                "prompt": "Recommendations in spanish. Only include dates in format yyyy-MM-dd that are after today. Do not include any words or text other than the date. Do not use any characters like 'El', asterisks, or anything extra. Start answer content with text wateringRecommendations: "
+            }
+            """, wateringDates);
 
         var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
         ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(tokenPlant), HttpMethod.POST, requestEntity);
@@ -135,17 +107,17 @@ public class PlantAIService implements IPlantAIService {
     }
 
     @Override
-    public String askPlantId(String idAccessToken, String question) {
+    public String askPlantId(String plantToken, String question) {
         String jsonBody = String.format("""
                 {
                     "question": "%s",
-                    "prompt": "No extra text. No special characters like asterisks."
+                    "prompt": "Answer in spanish. No extra text. No special characters like asterisks."
                 }
                 """, question);
 
         HttpHeaders headers = createHeaders();
         var requestEntity = new HttpEntity<>(jsonBody, headers);
-        ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(idAccessToken), HttpMethod.POST, requestEntity);
+        ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(plantToken), HttpMethod.POST, requestEntity);
 
         JsonNode jsonNode = ParsingUtils.getJsonNodeFromResponseBody(response);
         return ParsingUtils.getLastAnswerFromResponse(jsonNode);
@@ -171,7 +143,7 @@ public class PlantAIService implements IPlantAIService {
         return apiIdentifyUrl + "/" + token + "/conversation";
     }
 
-    @Retryable(backoff = @Backoff(delay = 2000))
+    @Retryable(maxAttempts = 10, backoff = @Backoff(delay = 2000000))
     private ResponseEntity<String> makeRequestToPlantAI(String url, HttpMethod method, HttpEntity<?> requestEntity) {
         return restTemplate.exchange(url, method, requestEntity, String.class);
     }

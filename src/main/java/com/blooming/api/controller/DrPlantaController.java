@@ -65,7 +65,7 @@ public class DrPlantaController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
-    @GetMapping("/savePlantIdentifiedByUser/{tokenPlant}/{plantName}")
+    @PostMapping("/savePlantIdentifiedByUser/{tokenPlant}/{plantName}")
     public ResponseEntity<?> savePlantIdentifiedByUser(@PathVariable("plantName") String plantName,
                                                        @PathVariable("tokenPlant") String tokenPlant,
                                                        HttpServletRequest request) {
@@ -74,7 +74,7 @@ public class DrPlantaController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN_USER')")
-    @GetMapping("/savePlantIdentifiedByAdmin/{plantName}/{userEmail}/{tokenPlant}")
+    @PostMapping("/savePlantIdentifiedByAdmin/{plantName}/{userEmail}/{tokenPlant}")
     public ResponseEntity<?> savePlantIdentifiedByAdmin(@PathVariable("plantName") String plantName,
                                                         @PathVariable("userEmail") String userEmail,
                                                         @PathVariable("tokenPlant") String tokenPlant,
@@ -145,11 +145,11 @@ public class DrPlantaController {
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
     @GetMapping("/pdf/{id}")
-    public ResponseEntity<byte[]> generateWateringPlanPdf(@PathVariable("id") Long id) {
-        WateringPlan wateringPlan = wateringPlanService.getWateringPlanById(id);
+    public ResponseEntity<byte[]> generateWateringPlanPdf(@PathVariable("id") Long wateringPlanId) {
+        WateringPlan wateringPlan = wateringPlanService.getWateringPlanById(wateringPlanId);
         byte[] pdfBytes = fileGeneratorService.generateWateringPlanPdf(wateringPlan);
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Disposition", "attachment; filename=watering_plan_" + id + ".pdf");
+        headers.add("Content-Disposition", "attachment; filename=watering_plan_" + wateringPlanId + ".pdf");
         headers.add("Content-Type", "application/pdf");
         return ResponseEntity.ok()
                 .headers(headers)
@@ -157,10 +157,11 @@ public class DrPlantaController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
-    @PostMapping("/askAI/{idAccessToken}")
-    public String askAI(@PathVariable("idAccessToken") String idAccessToken,
+    @PostMapping("/askAI/{id}")
+    public String askAI(@PathVariable("id") Long plantId,
                         @PathParam("question") String question) {
-        return plantAIService.askPlantId(idAccessToken, question);
+        String plantToken = plantIdentifiedService.getById(plantId).getPlantToken();
+        return plantAIService.askPlantId(plantToken, question);
     }
 
 }
