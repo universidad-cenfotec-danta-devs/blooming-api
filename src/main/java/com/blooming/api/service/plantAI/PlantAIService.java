@@ -11,8 +11,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.ZoneOffset;
@@ -73,7 +74,7 @@ public class PlantAIService implements IPlantAIService {
         //TODO: plantIdentified.setImageURL(s3ImageURL)
         if (plantIdentified.getMinWatering() == 0 || plantIdentified.getMaxWatering() == 0) {
             String wateringValues = generateWateringValues(tokenPlant, headers);
-            JsonNode wateringNode = wateringValuesToJsonNode(wateringValues);
+            JsonNode wateringNode = ParsingUtils.wateringValuesToJsonNode(wateringValues);
             plantIdentified.setMinWatering(wateringNode.path("min").asInt());
             plantIdentified.setMaxWatering(wateringNode.path("max").asInt());
         }
@@ -130,7 +131,6 @@ public class PlantAIService implements IPlantAIService {
                 """, wateringDates);
 
         var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
-        requestEntity = new HttpEntity<>(jsonBody, createHeaders());
         ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(tokenPlant), HttpMethod.POST, requestEntity);
         return ParsingUtils.parseWateringDays(response);
     }
@@ -145,9 +145,8 @@ public class PlantAIService implements IPlantAIService {
                 """, question);
 
         HttpHeaders headers = createHeaders();
-        HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, headers);
+        var requestEntity = new HttpEntity<>(jsonBody, headers);
         ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(idAccessToken), HttpMethod.POST, requestEntity);
-
 
         JsonNode jsonNode = ParsingUtils.getJsonNodeFromResponseBody(response);
         return ParsingUtils.getLastAnswerFromResponse(jsonNode);
@@ -157,7 +156,7 @@ public class PlantAIService implements IPlantAIService {
     private Optional<String> searchPlantByScientificName(String plantName) {
 
         HttpHeaders headers = createHeaders();
-        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+        HttpEntity<Object> requestEntity = new HttpEntity<>(headers);
         String url = apiPlantSearchUrl + plantName;
         ResponseEntity<String> response = makeRequestToPlantAI(url, HttpMethod.GET, requestEntity);
 
@@ -173,23 +172,9 @@ public class PlantAIService implements IPlantAIService {
         return apiIdentifyUrl + "/" + token + "/conversation";
     }
 
+    @Retryable(backoff = @Backoff(delay = 2000))
     private ResponseEntity<String> makeRequestToPlantAI(String url, HttpMethod method, HttpEntity<?> requestEntity) {
-        try {
-            return restTemplate.exchange(url, method, requestEntity, String.class);
-        } catch (RestClientException e) {
-            throw new RestClientException(e.getMessage());
-        } catch (Exception e) {
-            throw new RuntimeException("Unexpected error: " + e.getMessage(), e);
-        }
-    }
-
-    private JsonNode wateringValuesToJsonNode(String wateringValues) {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.readTree(wateringValues);
-        } catch (JsonProcessingException e) {
-            throw new ParsingException(e.getMessage());
-        }
+        return restTemplate.exchange(url, method, requestEntity, String.class);
     }
 
     private HttpHeaders createHeaders() {

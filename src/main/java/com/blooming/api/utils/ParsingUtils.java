@@ -3,6 +3,7 @@ package com.blooming.api.utils;
 import com.blooming.api.entity.PlantIdentified;
 import com.blooming.api.exception.ParsingException;
 import com.blooming.api.response.dto.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
@@ -68,6 +69,15 @@ public class ParsingUtils {
             return suggestionsList;
         } catch (Exception e) {
             throw new ParsingException("Error parsing plant suggestions", e);
+        }
+    }
+
+    public static JsonNode wateringValuesToJsonNode(String wateringValues) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readTree(wateringValues);
+        } catch (JsonProcessingException e) {
+            throw new ParsingException(e.getMessage());
         }
     }
 

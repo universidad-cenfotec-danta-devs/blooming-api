@@ -65,13 +65,25 @@ public class DrPlantaController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
-    @GetMapping("/savePlantIdentifiedByUser/{tokenPlant}")
-    public ResponseEntity<?> savePlantIdentifiedByUser(@RequestParam("plantName") String plantName,
+    @GetMapping("/savePlantIdentifiedByUser/{tokenPlant}/{plantName}")
+    public ResponseEntity<?> savePlantIdentifiedByUser(@PathVariable("plantName") String plantName,
                                                        @PathVariable("tokenPlant") String tokenPlant,
                                                        HttpServletRequest request) {
+        String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
+        return savePlantIdentified(plantName, tokenPlant, userEmail, request);
+    }
 
-        String username = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
-        Optional<User> user = userService.findByEmail(username);
+    @PreAuthorize("hasAnyRole('ADMIN_USER')")
+    @GetMapping("/savePlantIdentifiedByAdmin/{plantName}/{userEmail}/{tokenPlant}")
+    public ResponseEntity<?> savePlantIdentifiedByAdmin(@PathVariable("plantName") String plantName,
+                                                        @PathVariable("userEmail") String userEmail,
+                                                        @PathVariable("tokenPlant") String tokenPlant,
+                                                        HttpServletRequest request) {
+        return savePlantIdentified(plantName, tokenPlant, userEmail, request);
+    }
+
+    private ResponseEntity<?> savePlantIdentified(String plantName, String tokenPlant, String userEmail, HttpServletRequest request) {
+        Optional<User> user = userService.findByEmail(userEmail);
         if (user.isPresent()) {
             PlantIdentified plantIdentified = plantIdService.getPlantInformationByName(plantName, tokenPlant);
             plantIdentified.setUser(user.get());
@@ -86,24 +98,38 @@ public class DrPlantaController {
                     "",
                     HttpStatus.BAD_REQUEST, request);
         }
-
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
-    @PostMapping("/generateSchedule/{id}")
-    public ResponseEntity<?> generateWateringPlan(@PathVariable("id") Long plantId,
-                                                  HttpServletRequest request) {
 
-        String username = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
-        Optional<User> user = userService.findByEmail(username);
-        PlantIdentified plantIdentified = plantIdentifiedService.getById(plantId);
-        String tokenPlant = plantIdentified.getPlantToken();
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
+    @PostMapping("/generateWateringPlanByUser/{id}")
+    public ResponseEntity<?> generateWateringPlanByUser(@PathVariable("id") Long plantId,
+                                                        HttpServletRequest request) {
+        String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
+        return generateWateringPlan(plantId, userEmail, request);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN_USER')")
+    @PostMapping("/generateWateringPlanByAdmin/{id}/{userEmail}")
+    public ResponseEntity<?> generateWateringPlanByAdmin(@PathVariable("id") Long plantId,
+                                                         @PathVariable("userEmail") String userEmail,
+                                                         HttpServletRequest request) {
+        return generateWateringPlan(plantId, userEmail, request);
+    }
+
+    private ResponseEntity<?> generateWateringPlan(Long plantId, String userEmail, HttpServletRequest request) {
+        Optional<User> user = userService.findByEmail(userEmail);
         if (user.isPresent()) {
+            PlantIdentified plantIdentified = plantIdentifiedService.getById(plantId);
+            String tokenPlant = plantIdentified.getPlantToken();
+
             List<String> wateringSchedule = plantIdService.generateWateringSchedule(tokenPlant);
             fileGeneratorService.generateGoogleCalendarFile(wateringSchedule);
+
             List<WateringDayDTO> wateringDays = plantIdService.generateWateringDays(tokenPlant, wateringSchedule);
             WateringPlan wateringPlan = wateringPlanService.register(wateringDays, plantIdentified);
             fileGeneratorService.generateWateringPlanPdf(wateringPlan);
+
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.OK.name(),
                     wateringPlan,
@@ -114,8 +140,8 @@ public class DrPlantaController {
                     "",
                     HttpStatus.BAD_REQUEST, request);
         }
-
     }
+
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
     @GetMapping("/pdf/{id}")
