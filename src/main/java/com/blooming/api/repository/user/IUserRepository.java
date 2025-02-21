@@ -1,4 +1,4 @@
-package com.blooming.api.repository;
+package com.blooming.api.repository.user;
 
 import com.blooming.api.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;

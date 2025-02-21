@@ -2,7 +2,7 @@ package com.blooming.api.service.security;
 
 
 import com.blooming.api.entity.User;
-import com.blooming.api.repository.IUserRepository;
+import com.blooming.api.repository.user.IUserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -21,12 +21,11 @@ public class AuthService {
         this.userRepository = userRepository;
     }
 
-    public User authenticate(String username, String password) {
+    public User authenticate(String email, String password) {
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password)
+                new UsernamePasswordAuthenticationToken(email, password)
         );
-        //TODO: CAMBIAR A USERSERVICE
-        return userRepository.findByEmail(username)
+        return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 }

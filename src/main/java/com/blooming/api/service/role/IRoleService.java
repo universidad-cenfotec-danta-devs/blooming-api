@@ -8,5 +8,6 @@ import java.util.Optional;
 
 public interface IRoleService {
     ResponseEntity<?> register(Role role);
+
     Optional<Role> findByName(RoleEnum name);
 }

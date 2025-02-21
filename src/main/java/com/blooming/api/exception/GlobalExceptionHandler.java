@@ -1,5 +1,6 @@
 package com.blooming.api.exception;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.persistence.EntityNotFoundException;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,16 +29,24 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
     }
 
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<Map<String, String>> handleIOException(IOException ex) {
+        Map<String, String> errorDetails = new HashMap<>();
+        errorDetails.put("error", "There was an error processing the request. Please try again later.");
+        logger.error("IO error: {}", ex.getMessage());
+        return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(ParsingException.class)
+    public <T> ResponseEntity<T> handleParsingException(ParsingException ex) {
+        logger.error("ParsingException: {}", ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public <T> ResponseEntity<T> handleIllegalArgumentException(IllegalArgumentException ex) {
         logger.error("Invalid argument: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-    }
-
-    @ExceptionHandler(Exception.class)
-    public <T> ResponseEntity<T> handleGlobalException(Exception ex) {
-        logger.error("Internal server error: {}", ex.getMessage(), ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -58,6 +68,14 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(JsonParseException.class)
+    public ResponseEntity<Map<String, String>> handleJsonParseException(JsonParseException ex) {
+        Map<String, String> errorDetails = new HashMap<>();
+        errorDetails.put("error", "Invalid request data. Please ensure all fields are correct and follow the expected format.");
+        logger.error("Parsing error: {}", ex.getMessage());
+        return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(ExpiredJwtException.class)
     public ResponseEntity<Map<String, String>> handleExpiredJwtException(ExpiredJwtException ex) {
         Map<String, String> errorDetails = new HashMap<>();
@@ -65,6 +83,7 @@ public class GlobalExceptionHandler {
         logger.error("Expired JWT error: {}", ex.getMessage());
         return new ResponseEntity<>(errorDetails, HttpStatus.UNAUTHORIZED);
     }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, String>> handleBadCredentialsException(BadCredentialsException ex) {
         Map<String, String> errorDetails = new HashMap<>();

@@ -1,5 +1,6 @@
 package com.blooming.api.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
@@ -29,9 +30,7 @@ public class User implements UserDetails {
     @Column(unique = true, length = 100, nullable = false)
     private String email;
 
-    @Setter
-    private String username;
-
+    @JsonIgnore
     @Setter
     @Column(nullable = false)
     private String password;
@@ -64,7 +63,6 @@ public class User implements UserDetails {
     @JoinColumn(name = "role_id", referencedColumnName = "id", nullable = false)
     private Role role;
 
-    // Constructors
     public User() {
     }
 
@@ -98,10 +96,8 @@ public class User implements UserDetails {
         return password;
     }
 
-    public User setRole(Role role) {
+    public void setRole(Role role) {
         this.role = role;
-
-        return this;
     }
 
 }
