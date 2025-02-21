@@ -12,7 +12,7 @@ public interface IPlantAIService {
 
     PlantIdentified getPlantInformationByName(String plantName, String tokenPlant);
 
-    List<String> generateWateringSchedule(String idAccessToken);
+    List<String> generateWateringDates(String idAccessToken);
 
     List<WateringDayDTO> generateWateringDays(String idAccessToken, List<String> wateringDates);
 

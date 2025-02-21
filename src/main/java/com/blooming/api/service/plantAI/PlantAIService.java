@@ -25,7 +25,7 @@ import java.util.*;
 public class PlantAIService implements IPlantAIService {
 
     public static final String API_KEY_HEADER = "Api-Key";
-    public static final String DETAIL_PARAMS = "?details=watering,best_watering,best_light_condition,best_soil_type&language=es";
+    public static final String DETAIL_PARAMS = "?details=watering,best_watering,best_light_condition,best_soil_type";
 
     private final RestTemplate restTemplate;
 
@@ -76,32 +76,32 @@ public class PlantAIService implements IPlantAIService {
     }
 
     @Override
-    public List<String> generateWateringSchedule(String idAccessToken) {
+    public List<String> generateWateringDates(String idAccessToken) {
         String currentDate = ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_DATE_TIME);
         String jsonBody = String.format("""
                 {
-                    "question": "Generate a watering schedule for the next 2 months for this plant at 3pm. Base answer in watering, bestWatering, bestLightCondition, and bestSoilType values. Only include dates and times in the format yyyyMMddTHHmmssZ. Ensure all dates are strictly after the current date (today's date, %s). Start answer content with text wateringSchedule: ",
+                    "question": "Generate watering dates for the next 2 months for this plant at 3pm. Use watering, bestWatering, bestLightCondition, and bestSoilType values. Only include dates and times in the format yyyyMMddTHHmmssZ. Ensure all dates are strictly after the current date (today's date, %s). Start answer content with text wateringSchedule: ",
                     "prompt": "Only include dates in format yyyyMMddTHHmmssZ that are after today. Include max of 15 dates. No extra text. No special characters like asterisks. Start answer content with text wateringSchedule: ",
                     "created": "%s"
                 }
                 """, currentDate, currentDate);
 
-        var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
+        HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, createHeaders());
         ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(idAccessToken), HttpMethod.POST, requestEntity);
         String wateringDates = ParsingUtils.parseWateringDatesToString(response);
-        return Arrays.asList(wateringDates.trim().split("\n"));
+        return Arrays.asList(wateringDates.split("\n"));
     }
 
     @Override
     public List<WateringDayDTO> generateWateringDays(String tokenPlant, List<String> wateringDates) {
         String jsonBody = String.format("""
                 {
-                    "question": "Start content with value wateringRecommendations: then generate recommendations for each date based on this list generated for watering using the watering, bestWatering, bestLightCondition, and bestSoilType values and all of the others. %s",
-                    "prompt": "Only include dates in format yyyy-MM-dd that are after today. Do not include any words or text other than the date. Do not use any characters like 'El', asterisks, or anything extra. Start answer content with text wateringRecommendations: "
+                "question": "Generate for this plant watering recommendations for each date of this list. Try to not repeat recommendations. %s",
+                "prompt": "Answer format is date in format yyyy-MM-dd that are after today. In recommendations only include letters no spec characters. Example: yyyy-MM-dd:recommendationHere. Start answer content with text wateringRecommendations: "
                 }
                 """, wateringDates);
 
-        var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
+        HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, createHeaders());
         ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(tokenPlant), HttpMethod.POST, requestEntity);
         return ParsingUtils.parseWateringDays(response);
     }
@@ -111,12 +111,12 @@ public class PlantAIService implements IPlantAIService {
         String jsonBody = String.format("""
                 {
                     "question": "%s",
-                    "prompt": "No extra text. No special characters like asterisks."
+                    "prompt": "Respond in spanish language. No extra text. No special characters like asterisks."
                 }
                 """, question);
 
         HttpHeaders headers = createHeaders();
-        var requestEntity = new HttpEntity<>(jsonBody, headers);
+        HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, headers);
         ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(plantToken), HttpMethod.POST, requestEntity);
 
         JsonNode jsonNode = ParsingUtils.getJsonNodeFromResponseBody(response);
@@ -143,11 +143,10 @@ public class PlantAIService implements IPlantAIService {
         return apiIdentifyUrl + "/" + token + "/conversation";
     }
 
-    @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 10000))
+    @Retryable(maxAttempts = 6, backoff = @Backoff(delay = 10000, multiplier = 2))
     private ResponseEntity<String> makeRequestToPlantAI(String url, HttpMethod method, HttpEntity<?> requestEntity) {
         return restTemplate.exchange(url, method, requestEntity, String.class);
     }
-
 
     private HttpHeaders createHeaders() {
         return new HttpHeaders() {{

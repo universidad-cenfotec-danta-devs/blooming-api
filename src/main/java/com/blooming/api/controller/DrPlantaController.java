@@ -122,10 +122,10 @@ public class DrPlantaController {
             PlantIdentified plantIdentified = plantIdentifiedService.getById(plantId);
             String tokenPlant = plantIdentified.getPlantToken();
 
-            List<String> wateringSchedule = plantIdService.generateWateringSchedule(tokenPlant);
-            fileGeneratorService.generateGoogleCalendarFile(wateringSchedule);
+            List<String> wateringDates = plantIdService.generateWateringDates(tokenPlant);
+            fileGeneratorService.generateGoogleCalendarFile(wateringDates);
 
-            List<WateringDayDTO> wateringDays = plantIdService.generateWateringDays(tokenPlant, wateringSchedule);
+            List<WateringDayDTO> wateringDays = plantIdService.generateWateringDays(tokenPlant, wateringDates);
             WateringPlan wateringPlan = wateringPlanService.register(wateringDays, plantIdentified);
             fileGeneratorService.generateWateringPlanPdf(wateringPlan);
 
