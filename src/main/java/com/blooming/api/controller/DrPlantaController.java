@@ -1,9 +1,7 @@
 package com.blooming.api.controller;
 
-import com.blooming.api.entity.EntityStatus;
-import com.blooming.api.entity.User;
-import com.blooming.api.entity.WateringPlan;
-import com.blooming.api.entity.PlantIdentified;
+import com.blooming.api.entity.*;
+import com.blooming.api.request.QuestionRequest;
 import com.blooming.api.response.dto.PlantIdentifiedDTO;
 import com.blooming.api.response.dto.WateringDayDTO;
 import com.blooming.api.response.dto.WateringPlanDTO;
@@ -16,6 +14,7 @@ import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
 import com.blooming.api.service.watering.WateringPlanService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -101,7 +100,7 @@ public class DrPlantaController {
     }
 
 
-    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
+    @PreAuthorize("hasAnyRole('DESIGNER_USER', 'SIMPLE_USER')")
     @PostMapping("/generateWateringPlanByUser/{id}")
     public ResponseEntity<?> generateWateringPlanByUser(@PathVariable("id") Long plantId,
                                                         HttpServletRequest request) {
@@ -240,6 +239,32 @@ public class DrPlantaController {
     @PatchMapping("/deactivatePlant/{id}")
     public ResponseEntity<?> deactivatePlantIdentified(@PathVariable("id") Long plantId, HttpServletRequest request) {
         return changePlantStatus(plantId, EntityStatus.DEACTIVATE, request);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
+    @PatchMapping("/addImageToWateringDay/{wateringDayId}")
+    public ResponseEntity<?> addImageToWateringDay(
+            @PathVariable Long wateringDayId,
+            @RequestParam("img") MultipartFile image,
+            HttpServletRequest request) {
+
+        WateringDay updatedWateringDay = wateringPlanService.addImageToWateringDay(wateringDayId, image);
+        return new GlobalHandlerResponse()
+                .handleResponse(HttpStatus.OK.name(),
+                        updatedWateringDay, HttpStatus.OK, request);
+    }
+
+
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
+    @PostMapping("/askAI/{id}")
+    public ResponseEntity<?> askAI(@PathVariable("id") Long plantId,
+                                   @Valid @RequestBody QuestionRequest questionRequest,
+                                   HttpServletRequest request) {
+        PlantIdentified plantIdentified = plantIdentifiedService.getById(plantId);
+        String accessToken = plantIdentified.getPlantToken();
+        String answer = plantIdService.askPlantId(accessToken, questionRequest.question());
+        return new GlobalHandlerResponse().handleResponse(HttpStatus.OK.name(),
+                answer, HttpStatus.OK, request);
     }
 
     private ResponseEntity<?> changePlantStatus(Long plantId, EntityStatus status, HttpServletRequest request) {

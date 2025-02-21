@@ -80,8 +80,8 @@ public class PlantAIService implements IPlantAIService {
         String currentDate = ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_DATE_TIME);
         String jsonBody = String.format("""
                 {
-                    "question": "Generate a watering schedule for the next 2 months for this plant at 3pm, using the watering, bestWatering, bestLightCondition, and bestSoilType values. Only include dates and times in the format yyyyMMddTHHmmssZ. Ensure all dates are strictly after the current date (today's date, %s). Start answer content with text wateringSchedule: ",
-                    "prompt": "Only include dates in format yyyyMMddTHHmmssZ that are after today. No extra text. No special characters like asterisks. Start answer content with text wateringSchedule: ",
+                    "question": "Generate a watering schedule for the next 2 months for this plant at 3pm. Base answer in watering, bestWatering, bestLightCondition, and bestSoilType values. Only include dates and times in the format yyyyMMddTHHmmssZ. Ensure all dates are strictly after the current date (today's date, %s). Start answer content with text wateringSchedule: ",
+                    "prompt": "Only include dates in format yyyyMMddTHHmmssZ that are after today. Include max of 15 dates. No extra text. No special characters like asterisks. Start answer content with text wateringSchedule: ",
                     "created": "%s"
                 }
                 """, currentDate, currentDate);
@@ -95,11 +95,11 @@ public class PlantAIService implements IPlantAIService {
     @Override
     public List<WateringDayDTO> generateWateringDays(String tokenPlant, List<String> wateringDates) {
         String jsonBody = String.format("""
-            {
-                "question": "Start content with value wateringRecommendations: then generate recommendations for each date based on this list generated for watering using the watering, bestWatering, bestLightCondition, and bestSoilType values and all of the others. Answer in spanish. %s",
-                "prompt": "Recommendations in spanish. Only include dates in format yyyy-MM-dd that are after today. Do not include any words or text other than the date. Do not use any characters like 'El', asterisks, or anything extra. Start answer content with text wateringRecommendations: "
-            }
-            """, wateringDates);
+                {
+                    "question": "Start content with value wateringRecommendations: then generate recommendations for each date based on this list generated for watering using the watering, bestWatering, bestLightCondition, and bestSoilType values and all of the others. %s",
+                    "prompt": "Only include dates in format yyyy-MM-dd that are after today. Do not include any words or text other than the date. Do not use any characters like 'El', asterisks, or anything extra. Start answer content with text wateringRecommendations: "
+                }
+                """, wateringDates);
 
         var requestEntity = new HttpEntity<>(jsonBody, createHeaders());
         ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(tokenPlant), HttpMethod.POST, requestEntity);
@@ -111,7 +111,7 @@ public class PlantAIService implements IPlantAIService {
         String jsonBody = String.format("""
                 {
                     "question": "%s",
-                    "prompt": "Answer in spanish. No extra text. No special characters like asterisks."
+                    "prompt": "No extra text. No special characters like asterisks."
                 }
                 """, question);
 
@@ -143,10 +143,11 @@ public class PlantAIService implements IPlantAIService {
         return apiIdentifyUrl + "/" + token + "/conversation";
     }
 
-    @Retryable(maxAttempts = 10, backoff = @Backoff(delay = 2000000))
+    @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 10000))
     private ResponseEntity<String> makeRequestToPlantAI(String url, HttpMethod method, HttpEntity<?> requestEntity) {
         return restTemplate.exchange(url, method, requestEntity, String.class);
     }
+
 
     private HttpHeaders createHeaders() {
         return new HttpHeaders() {{

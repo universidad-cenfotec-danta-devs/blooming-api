@@ -18,6 +18,7 @@ public class WateringDay {
     private int month;
     private int year;
     private String recommendation;
+    private String imageURL;
 
     @JsonIgnore
     @ManyToOne
