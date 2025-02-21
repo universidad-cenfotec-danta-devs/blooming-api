@@ -14,8 +14,11 @@ public class PlantIdentified {
     private Long id;
     @Column(unique = true, nullable = false)
     private String plantToken;
+    @Column(nullable = false)
     private String name;
     private String imageURL;
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

@@ -6,8 +6,13 @@ import com.blooming.api.entity.WateringPlan;
 import com.blooming.api.repository.watering.IWateringDayRepository;
 import com.blooming.api.repository.watering.IWateringPlanRepository;
 import com.blooming.api.response.dto.WateringDayDTO;
+import com.blooming.api.response.dto.WateringPlanDTO;
+import com.blooming.api.utils.ParsingUtils;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -47,8 +52,38 @@ public class WateringPlanService implements IWateringPlanService {
     }
 
     @Override
+    public Page<WateringPlanDTO> getWateringPlansByUser(Long userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<WateringPlan> wateringPlansPage = wateringPlanRepository.findByPlantUserId(userId, pageable);
+        return wateringPlansPage.map(ParsingUtils::toWateringPlanDTO);
+    }
+
+    @Override
     public WateringPlan getWateringPlanById(Long id) {
         return wateringPlanRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Watering plan not found with id: " + id));
     }
+
+    @Override
+    @Transactional
+    public boolean activateWateringPlans(PlantIdentified plantIdentified) {
+        try {
+            int updatedRows = wateringPlanRepository.activateByPlantId(plantIdentified);
+            return updatedRows > 0;
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean deactivateWateringPlans(PlantIdentified plantIdentified) {
+        try {
+            int updatedRows = wateringPlanRepository.deactivateByPlantId(plantIdentified);
+            return updatedRows > 0;
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

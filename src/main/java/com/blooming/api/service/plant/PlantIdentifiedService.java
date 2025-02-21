@@ -32,7 +32,7 @@ public class PlantIdentifiedService implements IPlantIdentifiedService {
     }
 
     @Override
-    public com.blooming.api.entity.PlantIdentified getById(Long id) {
+    public PlantIdentified getById(Long id) {
         return plantIdentifiedRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Plant not found with id: " + id));
     }
@@ -63,5 +63,32 @@ public class PlantIdentifiedService implements IPlantIdentifiedService {
         Pageable pageable = PageRequest.of(page, size);
         Page<PlantIdentified> plantsPage = plantIdentifiedRepository.findByUserId(userId, pageable);
         return plantsPage.map(ParsingUtils::toPlantIdentifiedDTO);
+    }
+
+    @Override
+    public Page<PlantIdentifiedDTO> getAllActivePlantsByUser(long userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PlantIdentified> plantsPage = plantIdentifiedRepository.findAllActiveByUserId(userId, pageable);
+        return plantsPage.map(ParsingUtils::toPlantIdentifiedDTO);
+    }
+
+    @Override
+    @Transactional
+    public boolean activate(Long plantId) {
+        if (!plantIdentifiedRepository.existsById(plantId)) {
+            throw new EntityNotFoundException("Plant not found with id: " + plantId);
+        }
+        int updatedRows = plantIdentifiedRepository.activate(plantId);
+        return updatedRows > 0;
+    }
+
+    @Override
+    @Transactional
+    public boolean deactivate(Long plantId) {
+        if (!plantIdentifiedRepository.existsById(plantId)) {
+            throw new EntityNotFoundException("Plant not found with id: " + plantId);
+        }
+        int updatedRows = plantIdentifiedRepository.deactivate(plantId);
+        return updatedRows > 0;
     }
 }

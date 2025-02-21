@@ -8,9 +8,11 @@ import lombok.Setter;
 public class PlantIdentifiedDTO {
     private Long id;
     private String name;
+    private boolean isActive;
 
-    public PlantIdentifiedDTO(Long id, String name) {
+    public PlantIdentifiedDTO(Long id, String name, boolean isActive) {
         this.id = id;
         this.name = name;
+        this.isActive = isActive;
     }
 }

@@ -1,20 +1,22 @@
 package com.blooming.api.controller;
 
+import com.blooming.api.entity.EntityStatus;
 import com.blooming.api.entity.User;
 import com.blooming.api.entity.WateringPlan;
 import com.blooming.api.entity.PlantIdentified;
 import com.blooming.api.response.dto.PlantIdentifiedDTO;
 import com.blooming.api.response.dto.WateringDayDTO;
+import com.blooming.api.response.dto.WateringPlanDTO;
 import com.blooming.api.response.http.GlobalHandlerResponse;
+import com.blooming.api.response.http.MetaResponse;
 import com.blooming.api.service.google.FileGeneratorService;
 import com.blooming.api.service.plant.PlantIdentifiedService;
 import com.blooming.api.service.plantAI.IPlantAIService;
-import com.blooming.api.service.plantAI.PlantAIService;
 import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
 import com.blooming.api.service.watering.WateringPlanService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.websocket.server.PathParam;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,21 +38,19 @@ public class DrPlantaController {
     private final WateringPlanService wateringPlanService;
     private final PlantIdentifiedService plantIdentifiedService;
     private final JwtService jwtService;
-    private final PlantAIService plantAIService;
 
     public DrPlantaController(IPlantAIService plantIdService,
                               IUserService userService,
                               FileGeneratorService fileGeneratorService,
                               WateringPlanService wateringPlanService,
                               PlantIdentifiedService plantIdentifiedService,
-                              JwtService jwtService, PlantAIService plantAIService) {
+                              JwtService jwtService) {
         this.plantIdService = plantIdService;
         this.userService = userService;
         this.fileGeneratorService = fileGeneratorService;
         this.wateringPlanService = wateringPlanService;
         this.plantIdentifiedService = plantIdentifiedService;
         this.jwtService = jwtService;
-        this.plantAIService = plantAIService;
     }
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER', 'NURSERY_USER')")
@@ -157,11 +157,149 @@ public class DrPlantaController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
-    @PostMapping("/askAI/{id}")
-    public String askAI(@PathVariable("id") Long plantId,
-                        @PathParam("question") String question) {
-        String plantToken = plantIdentifiedService.getById(plantId).getPlantToken();
-        return plantAIService.askPlantId(plantToken, question);
+    @GetMapping("/getWateringPlansByUser")
+    public ResponseEntity<?> getWateringPlansByUser(HttpServletRequest request,
+                                                    @RequestParam(defaultValue = "1") int page,
+                                                    @RequestParam(defaultValue = "10") int size) {
+        String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
+        Optional<User> user = userService.findByEmail(userEmail);
+
+        if (user.isPresent()) {
+            return getWateringPlansByUserId(user.get().getId(), page, size, request);
+        } else {
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.BAD_REQUEST.name(),
+                    HttpStatus.BAD_REQUEST, request);
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN_USER')")
+    @GetMapping("/getWateringPlansByUserAdmin/{userEmail}")
+    public ResponseEntity<?> getWateringPlansByUserAdmin(@PathVariable String userEmail,
+                                                         @RequestParam(defaultValue = "1") int page,
+                                                         @RequestParam(defaultValue = "10") int size,
+                                                         HttpServletRequest request) {
+        Optional<User> user = userService.findByEmail(userEmail);
+
+        if (user.isPresent()) {
+            return getWateringPlansByUserId(user.get().getId(), page, size, request);
+        } else {
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.BAD_REQUEST.name(),
+                    HttpStatus.BAD_REQUEST, request);
+        }
+    }
+
+    private ResponseEntity<?> getWateringPlansByUserId(Long userId, int page, int size, HttpServletRequest request) {
+        Page<WateringPlanDTO> wateringPlanPage = wateringPlanService.getWateringPlansByUser(userId, page, size);
+        return getPaginatedResponse(wateringPlanPage, request);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN_USER')")
+    @GetMapping("/getPlantsByUserAdmin/{userEmail}")
+    public ResponseEntity<?> getPlantsByUserAdmin(@PathVariable String userEmail,
+                                                  @RequestParam(defaultValue = "1") int page,
+                                                  @RequestParam(defaultValue = "10") int size,
+                                                  HttpServletRequest request) {
+        return getPlantsByUserEmail(userEmail, page, size, request, false);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
+    @GetMapping("/getPlantsByUser")
+    public ResponseEntity<?> getPlantsByUser(@RequestParam(defaultValue = "1") int page,
+                                             @RequestParam(defaultValue = "10") int size,
+                                             HttpServletRequest request) {
+        String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
+        return getPlantsByUserEmail(userEmail, page, size, request, true);
+    }
+
+    private ResponseEntity<?> getPlantsByUserEmail(String userEmail, int page, int size, HttpServletRequest request, boolean activeOnly) {
+        Optional<User> user = userService.findByEmail(userEmail);
+        if (user.isPresent()) {
+            Page<PlantIdentifiedDTO> plantPage;
+            if (activeOnly) {
+                plantPage = plantIdentifiedService.getAllActivePlantsByUser(user.get().getId(), page, size);
+            } else {
+                plantPage = plantIdentifiedService.getAllPlantsByUser(user.get().getId(), page, size);
+            }
+            return getPaginatedResponse(plantPage, request);
+        } else {
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.BAD_REQUEST.name(),
+                    HttpStatus.BAD_REQUEST, request);
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN_USER')")
+    @PatchMapping("/activatePlant/{id}")
+    public ResponseEntity<?> activatePlantIdentified(@PathVariable("id") Long plantId, HttpServletRequest request) {
+        return changePlantStatus(plantId, EntityStatus.ACTIVATE, request);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
+    @PatchMapping("/deactivatePlant/{id}")
+    public ResponseEntity<?> deactivatePlantIdentified(@PathVariable("id") Long plantId, HttpServletRequest request) {
+        return changePlantStatus(plantId, EntityStatus.DEACTIVATE, request);
+    }
+
+    private ResponseEntity<?> changePlantStatus(Long plantId, EntityStatus status, HttpServletRequest request) {
+        boolean success;
+        boolean wateringPlansSuccess;
+        String actionMessage = status == EntityStatus.ACTIVATE ? "activated successfully" : "deactivated successfully";
+
+        switch (status) {
+            case ACTIVATE:
+                success = plantIdentifiedService.activate(plantId);
+                if (success) {
+                    PlantIdentified plant = plantIdentifiedService.getById(plantId);
+                    wateringPlansSuccess = wateringPlanService.activateWateringPlans(plant);
+                } else {
+                    return new GlobalHandlerResponse()
+                            .handleResponse(HttpStatus.INTERNAL_SERVER_ERROR.name(), HttpStatus.INTERNAL_SERVER_ERROR, request);
+                }
+                break;
+
+            case DEACTIVATE:
+                success = plantIdentifiedService.deactivate(plantId);
+                if (success) {
+                    PlantIdentified plant = plantIdentifiedService.getById(plantId);
+                    wateringPlansSuccess = wateringPlanService.deactivateWateringPlans(plant);
+                } else {
+                    return new GlobalHandlerResponse()
+                            .handleResponse(HttpStatus.INTERNAL_SERVER_ERROR.name(), HttpStatus.INTERNAL_SERVER_ERROR, request);
+                }
+                break;
+
+            default:
+                return new GlobalHandlerResponse()
+                        .handleResponse(HttpStatus.BAD_REQUEST.name(), HttpStatus.BAD_REQUEST, request);
+        }
+
+        if (wateringPlansSuccess) {
+            return new GlobalHandlerResponse()
+                    .handleResponse(HttpStatus.OK.name(), "Plant and watering plans " + actionMessage, HttpStatus.OK, request);
+        } else {
+            return new GlobalHandlerResponse()
+                    .handleResponse(HttpStatus.BAD_REQUEST.name(), HttpStatus.BAD_REQUEST, request);
+        }
+    }
+
+
+    private ResponseEntity<?> getPaginatedResponse(Page<?> page, HttpServletRequest request) {
+        if (page.isEmpty()) {
+            return new GlobalHandlerResponse().handleResponse(HttpStatus.NO_CONTENT.name(),
+                    page.getContent(), HttpStatus.OK, request);
+        }
+
+        MetaResponse metaResponse = new MetaResponse(
+                request.getRequestURL().toString(),
+                request.getMethod(),
+                page.getTotalPages(),
+                page.getTotalElements(),
+                page.getNumber() + 1,
+                page.getSize()
+        );
+        return new GlobalHandlerResponse().handleResponse(HttpStatus.OK.name(), page.getContent(), HttpStatus.OK, metaResponse, request);
     }
 
 }

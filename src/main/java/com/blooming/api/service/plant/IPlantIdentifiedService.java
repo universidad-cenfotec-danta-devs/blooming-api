@@ -14,4 +14,11 @@ public interface IPlantIdentifiedService {
     Page<PlantIdentifiedDTO> getAllPlants(int page, int size);
 
     Page<PlantIdentifiedDTO> getAllPlantsByUser(long userId, int page, int size);
+
+    Page<PlantIdentifiedDTO> getAllActivePlantsByUser(long userId, int page, int size);
+
+    boolean activate(Long plantId);
+
+    boolean deactivate(Long plantId);
+
 }

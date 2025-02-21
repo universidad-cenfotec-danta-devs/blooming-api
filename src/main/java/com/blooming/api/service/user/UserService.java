@@ -5,6 +5,7 @@ import com.blooming.api.entity.RoleEnum;
 import com.blooming.api.entity.User;
 import com.blooming.api.repository.role.IRoleRepository;
 import com.blooming.api.repository.user.IUserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,6 +27,7 @@ public class UserService implements IUserService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<?> register(User user, RoleEnum rolAssigned) {
 
         Optional<User> existingUser = userRepository.findByEmail(user.getEmail());

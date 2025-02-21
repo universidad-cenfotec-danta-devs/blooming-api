@@ -3,6 +3,7 @@ package com.blooming.api.service.role;
 import com.blooming.api.entity.Role;
 import com.blooming.api.entity.RoleEnum;
 import com.blooming.api.repository.role.IRoleRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ public class RoleService implements IRoleService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<?> register(Role role) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(roleRepository.save(role));

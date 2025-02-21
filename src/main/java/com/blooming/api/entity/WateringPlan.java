@@ -22,6 +22,9 @@ public class WateringPlan {
     @OneToMany(mappedBy = "wateringPlan", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WateringDay> wateringDays;
 
+    @Column(nullable = false)
+    private boolean isActive = true;
+
     public WateringPlan() {
     }
 

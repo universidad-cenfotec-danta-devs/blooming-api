@@ -1,6 +1,7 @@
 package com.blooming.api.utils;
 
 import com.blooming.api.entity.PlantIdentified;
+import com.blooming.api.entity.WateringPlan;
 import com.blooming.api.exception.ParsingException;
 import com.blooming.api.response.dto.*;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -127,7 +128,8 @@ public class ParsingUtils {
         try {
             return new PlantIdentifiedDTO(
                     plant.getId(),
-                    plant.getName()
+                    plant.getName(),
+                    plant.isActive()
             );
         } catch (Exception e) {
             throw new ParsingException(e.getMessage());
@@ -169,5 +171,13 @@ public class ParsingUtils {
             throw new ParsingException("Error parsing JSON response", e);
         }
         return "";
+    }
+
+    public static WateringPlanDTO toWateringPlanDTO(WateringPlan wateringPlan) {
+        return new WateringPlanDTO(
+                wateringPlan.getId(),
+                wateringPlan.getPlant().getId(),
+                wateringPlan.isActive()
+        );
     }
 }
