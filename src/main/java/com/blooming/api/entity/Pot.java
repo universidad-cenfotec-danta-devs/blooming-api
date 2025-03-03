@@ -1,37 +1,39 @@
 package com.blooming.api.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.util.Date;
+import java.util.List;
 
-@Getter
-@Setter
 @Entity
-public class PlantIdentified {
+@Data
+public class Pot {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
-    private String plantToken;
-
     @Column(nullable = false)
     private String name;
 
-    private String imageURL;
+    @Column(nullable = false)
+    private String description;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive = true;
+    @Column(nullable = false)
+    private Double price;
 
-    @JsonIgnore
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(name = "image_url")
+    private String imageUrl;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "designer_id")
+    private User designer;
+
+    @OneToMany(mappedBy = "pot", fetch = FetchType.LAZY)
+    private List<Evaluation> evaluations;
 
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
@@ -40,4 +42,5 @@ public class PlantIdentified {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Date updatedAt;
+
 }

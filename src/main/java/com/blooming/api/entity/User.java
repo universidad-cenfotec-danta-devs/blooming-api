@@ -40,6 +40,18 @@ public class User implements UserDetails {
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private List<PlantIdentified> identifiedPlants;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private List<Evaluation> evaluations;
+
+    @OneToOne(mappedBy = "user")
+    private Cart cart;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private List<Purchase> purchases;
+
     @Setter
     @Getter
     @CreationTimestamp
