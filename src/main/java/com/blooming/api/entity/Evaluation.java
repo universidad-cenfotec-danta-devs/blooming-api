@@ -33,6 +33,9 @@ public class Evaluation {
     @Column(nullable = false, length = 500)
     private String comment;
 
+    @Column(nullable = false)
+    private boolean isActive = true;
+
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
     private Date createdAt;

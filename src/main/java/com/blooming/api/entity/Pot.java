@@ -35,6 +35,9 @@ public class Pot {
     @OneToMany(mappedBy = "pot", fetch = FetchType.LAZY)
     private List<Evaluation> evaluations;
 
+    @Column(nullable = false)
+    private boolean isActive = true;
+
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
     private Date createdAt;
