@@ -29,6 +29,9 @@ public class WateringDay {
     @JoinColumn(name = "watering_plan_id", nullable = false)
     private WateringPlan wateringPlan;
 
+    @Column(nullable = false)
+    private boolean isActive = true;
+
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
     private Date createdAt;

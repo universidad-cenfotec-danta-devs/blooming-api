@@ -52,6 +52,9 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<Purchase> purchases;
 
+    @Column(nullable = false)
+    private boolean isActive = true;
+
     @Setter
     @Getter
     @CreationTimestamp

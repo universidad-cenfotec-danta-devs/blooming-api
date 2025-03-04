@@ -25,6 +25,9 @@ public class Purchase {
 
     private Double totalAmount;
 
+    @Column(nullable = false)
+    private boolean isActive = true;
+
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
     private Date createdAt;
