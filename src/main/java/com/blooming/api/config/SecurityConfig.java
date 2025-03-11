@@ -1,6 +1,7 @@
 package com.blooming.api.config;
 
 import com.blooming.api.security.JwtAuthenticationFilter;
+import com.blooming.api.service.security.GoogleLoginSuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -14,6 +15,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Security configuration for the application.
+ * This class defines route protection, session management, and integration of authentication and authorization filters.
+ * It enables JWT and Google OAuth2 authentication, configuring both public and private routes.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -31,12 +37,28 @@ public class SecurityConfig {
 
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final GoogleLoginSuccessHandler googleLoginSuccessHandler;
 
-    public SecurityConfig(AuthenticationProvider authenticationProvider, JwtAuthenticationFilter jwtAuthenticationFilter) {
+    /**
+     * Constructor for SecurityConfig.
+     *
+     * @param authenticationProvider    The authentication provider that handles the authentication process.
+     * @param jwtAuthenticationFilter   The filter that manages JWT-based authentication and validation.
+     * @param googleLoginSuccessHandler The success handler for Google OAuth2 authentication.
+     */
+    public SecurityConfig(AuthenticationProvider authenticationProvider, JwtAuthenticationFilter jwtAuthenticationFilter, GoogleLoginSuccessHandler googleLoginSuccessHandler) {
         this.authenticationProvider = authenticationProvider;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.googleLoginSuccessHandler = googleLoginSuccessHandler;
     }
 
+    /**
+     * Configures the security filter chain, including route protection, authentication, and session management.
+     *
+     * @param httpSecurity The HttpSecurity object to configure security settings.
+     * @return A configured SecurityFilterChain instance.
+     * @throws Exception if an error occurs during security configuration.
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.csrf(AbstractHttpConfigurer::disable)
@@ -44,6 +66,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers(HttpMethod.POST, LOG_IN_URI).permitAll()
                         .anyRequest().authenticated()
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(googleLoginSuccessHandler)
                 )
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
