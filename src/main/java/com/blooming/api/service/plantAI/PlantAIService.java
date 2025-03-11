@@ -2,6 +2,7 @@ package com.blooming.api.service.plantAI;
 
 import com.blooming.api.exception.ParsingException;
 import com.blooming.api.entity.PlantIdentified;
+import com.blooming.api.response.dto.HealthAssessmentDTO;
 import com.blooming.api.response.dto.WateringDayDTO;
 import com.blooming.api.response.dto.PlantSuggestionDTO;
 import com.blooming.api.utils.ParsingUtils;
@@ -38,6 +39,9 @@ public class PlantAIService implements IPlantAIService {
     @Value("${plant.id.api.base.url}")
     private String apiPlantBaseUrl;
 
+    @Value("${plant.id.api.plant.health.url}")
+    private String apiPlantHealthUrl;
+
     @Value("${plant.id.api.key}")
     private String apiKey;
 
@@ -61,6 +65,20 @@ public class PlantAIService implements IPlantAIService {
         return ParsingUtils.parsePlantSuggestions(response);
     }
 
+    @Override
+    public List<HealthAssessmentDTO> generateHealthAssessment(byte[] bytesImg) {
+
+        String base64Image = Base64.getEncoder().encodeToString(bytesImg);
+        String jsonBody = """
+                {
+                    "images": ["%s"]
+                }
+                """.formatted(base64Image);
+        HttpHeaders headers = createHeaders();
+        var requestEntity = new HttpEntity<>(jsonBody, headers);
+        ResponseEntity<String> response = makeRequestToPlantAI(apiPlantHealthUrl, HttpMethod.POST, requestEntity);
+        return ParsingUtils.parseHealthAssessment(response);
+    }
 
     @Override
     public PlantIdentified getPlantInformationByName(String plantName, String tokenPlant) {
