@@ -8,9 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class ParsingUtils {
 
@@ -67,6 +65,63 @@ public class ParsingUtils {
             throw new ParsingException("Error parsing plant suggestions", e);
         }
     }
+
+    public static List<HealthAssessmentDTO> parseHealthAssessment(ResponseEntity<String> response) {
+        try {
+            JsonNode rootNode = getJsonNodeFromResponseBody(response);
+
+            List<HealthAssessmentDTO> list = new ArrayList<>();
+
+            JsonNode diseaseNode = rootNode.path("result").path("disease").path("suggestions");
+
+            for (JsonNode suggestionNode : diseaseNode) {
+                DiseaseSuggestionDTO diseaseSuggestion = new DiseaseSuggestionDTO();
+
+                diseaseSuggestion.setId(suggestionNode.path("id").asText());
+                diseaseSuggestion.setName(suggestionNode.path("name").asText());
+                int probability = (int) (suggestionNode.path("probability").asDouble() * 100);
+                diseaseSuggestion.setProbability(probability);
+                DiseaseDetailsDTO diseaseDetails = new DiseaseDetailsDTO();
+                JsonNode detailsNode = suggestionNode.path("details");
+
+                diseaseDetails.setLocalName(detailsNode.path("local_name").asText());
+                diseaseDetails.setDescription(detailsNode.path("description").asText());
+                diseaseDetails.setUrl(detailsNode.path("url").asText());
+
+                TreatmentDTO treatment = new TreatmentDTO();
+                JsonNode treatmentNode = detailsNode.path("treatment");
+
+                treatment.setChemical(parseTreatmentList(treatmentNode.path("chemical")));
+                treatment.setBiological(parseTreatmentList(treatmentNode.path("biological")));
+                treatment.setPrevention(parseTreatmentList(treatmentNode.path("prevention")));
+
+                diseaseDetails.setTreatment(treatment);
+
+                diseaseSuggestion.setDetails(diseaseDetails);
+
+                HealthAssessmentDTO healthAssessmentDTO = new HealthAssessmentDTO();
+                healthAssessmentDTO.setDiseaseSuggestions(List.of(diseaseSuggestion));
+
+                list.add(healthAssessmentDTO);
+            }
+
+            return list;
+
+        } catch (Exception e) {
+            throw new ParsingException("Error parsing health assessment: " + e.getMessage());
+        }
+    }
+
+    private static List<String> parseTreatmentList(JsonNode treatmentNode) {
+        List<String> treatmentList = new ArrayList<>();
+        if (treatmentNode.isArray()) {
+            for (JsonNode node : treatmentNode) {
+                treatmentList.add(node.asText());
+            }
+        }
+        return treatmentList;
+    }
+
 
     public static PlantIdentified parsePlantDetails(ResponseEntity<String> response, String plantToken) {
         try {
