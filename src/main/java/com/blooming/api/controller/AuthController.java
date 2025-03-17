@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/api/users")
 public class AuthController {
@@ -33,9 +35,11 @@ public class AuthController {
     public ResponseEntity<LogInResponse> authenticate(@Valid @RequestBody LogInRequest logInRequest) {
         User authenticatedUser = authService.authenticate(logInRequest.email(), logInRequest.password());
         String jwtToken = jwtService.generateToken(authenticatedUser);
+        Optional<User> foundUser = userService.findByEmail(logInRequest.email());
         LogInResponse logInResponse = LogInResponse.builder()
                 .token(jwtToken)
                 .expiresIn(jwtService.getExpirationTime())
+                .authUser(foundUser)
                 .build();
         return ResponseEntity.ok(logInResponse);
     }
