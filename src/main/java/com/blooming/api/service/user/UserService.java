@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -30,15 +32,20 @@ public class UserService implements IUserService {
     @Transactional
     public ResponseEntity<?> register(User user, RoleEnum rolAssigned) {
 
+        System.out.println(user);
         Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
         if (existingUser.isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already in use");
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Email already in use");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         Optional<Role> role = roleRepository.findByName(rolAssigned);
 
         if (role.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Role not found");
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Role not found");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
         user.setRole(role.get());
         User savedUser = userRepository.save(user);
