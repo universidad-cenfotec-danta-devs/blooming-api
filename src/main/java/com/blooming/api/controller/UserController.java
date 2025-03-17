@@ -14,9 +14,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/users")
@@ -27,6 +31,9 @@ public class UserController {
     @Autowired
     private IUserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @PostMapping
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         return userService.register(user, RoleEnum.SIMPLE_USER);
@@ -35,8 +42,8 @@ public class UserController {
     @GetMapping("/paginated")
     @PreAuthorize("hasAnyRole('ADMIN_USER')")
     public ResponseEntity<?> getAllUsersPaginated(@RequestParam(defaultValue = "1") int page,
-                                         @RequestParam(defaultValue = "10") int size,
-                                         HttpServletRequest request) {
+                                                  @RequestParam(defaultValue = "10") int size,
+                                                  HttpServletRequest request) {
         Pageable pageable = PageRequest.of(page-1, size);
         Page<User> usersPage = userRepository.findAll(pageable);
 
@@ -53,5 +60,22 @@ public class UserController {
     @PreAuthorize("hasAnyRole('ADMIN_USER')")
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN_USER')")
+    public User updateUser(@PathVariable Long id, @RequestBody User user, HttpServletRequest request) {
+        return userRepository.findById(id)
+                .map(existingUser -> {
+                    existingUser.setActive(user.isActive());
+                    existingUser.setRole(user.getRole());
+                    existingUser.setEmail(user.getEmail());
+                    existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
+                    return userRepository.save(existingUser);
+                })
+                .orElseGet(() -> {
+                    user.setId(id);
+                    return userRepository.save(user);
+                });
     }
 }

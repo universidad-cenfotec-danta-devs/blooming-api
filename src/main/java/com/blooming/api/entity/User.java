@@ -53,8 +53,10 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<Purchase> purchases;
 
+    @Setter
+    @Getter
     @Column(nullable = false)
-    private boolean isActive = true;
+    private boolean isActive;
 
     @Setter
     @Getter

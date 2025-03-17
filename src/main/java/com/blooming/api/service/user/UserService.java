@@ -31,8 +31,6 @@ public class UserService implements IUserService {
     @Override
     @Transactional
     public ResponseEntity<?> register(User user, RoleEnum rolAssigned) {
-
-        System.out.println(user);
         Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
         if (existingUser.isPresent()) {
             Map<String, String> response = new HashMap<>();
@@ -48,6 +46,7 @@ public class UserService implements IUserService {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
         user.setRole(role.get());
+        user.setActive(true);
         User savedUser = userRepository.save(user);
         return ResponseEntity.ok(savedUser);
     }
