@@ -3,7 +3,6 @@ package com.blooming.api.controller;
 import com.blooming.api.entity.RoleEnum;
 import com.blooming.api.entity.User;
 import com.blooming.api.repository.user.IUserRepository;
-import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.response.http.GlobalResponseHandler;
 import com.blooming.api.response.http.MetaResponse;
 import com.blooming.api.service.user.UserService;
@@ -16,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/users")
@@ -31,9 +32,9 @@ public class UserController {
         return userService.register(user, RoleEnum.SIMPLE_USER);
     }
 
-    @GetMapping
+    @GetMapping("/paginated")
     @PreAuthorize("hasAnyRole('ADMIN_USER')")
-    public ResponseEntity<?> getAllUsers(@RequestParam(defaultValue = "1") int page,
+    public ResponseEntity<?> getAllUsersPaginated(@RequestParam(defaultValue = "1") int page,
                                          @RequestParam(defaultValue = "10") int size,
                                          HttpServletRequest request) {
         Pageable pageable = PageRequest.of(page-1, size);
@@ -45,6 +46,12 @@ public class UserController {
         meta.setPageNumber(usersPage.getNumber() + 1);
         meta.setPageSize(usersPage.getSize());
 
-        return new GlobalResponseHandler().handleResponse("User retrieved successfully", usersPage.getContent(), HttpStatus.OK, meta);
+        return new GlobalResponseHandler()._handleResponse("User retrieved successfully", usersPage.getContent(), HttpStatus.OK, meta);
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN_USER')")
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
     }
 }

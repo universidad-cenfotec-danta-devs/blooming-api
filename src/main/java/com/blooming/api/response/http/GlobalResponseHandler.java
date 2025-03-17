@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalResponseHandler {
     @ResponseBody
-    public <T> ResponseEntity<?> handleResponse(String message, T body, HttpStatus status, HttpServletRequest request) {
+    public <T> ResponseEntity<?> _handleResponse(String message, T body, HttpStatus status, HttpServletRequest request) {
         MetaResponse meta = new MetaResponse(request.getMethod(), request.getRequestURL().toString());
         if (body instanceof HttpResponse) {
             HttpResponse<?> response = (HttpResponse<?>) body;
@@ -22,14 +22,14 @@ public class GlobalResponseHandler {
     }
 
     @ResponseBody
-    public <T> ResponseEntity<?> handleResponse(String message, HttpStatus status, HttpServletRequest request) {
+    public <T> ResponseEntity<?> _handleResponse(String message, HttpStatus status, HttpServletRequest request) {
         MetaResponse meta = new MetaResponse(request.getMethod(), request.getRequestURL().toString());
         HttpResponse<?> response = new HttpResponse<>(message, meta);
         return  new ResponseEntity<>(response, status);
     }
 
     @ResponseBody
-    public <T> ResponseEntity<?> handleResponse(String message, T body, HttpStatus status, MetaResponse meta) {
+    public <T> ResponseEntity<?> _handleResponse(String message, T body, HttpStatus status, MetaResponse meta) {
         if (body instanceof HttpResponse) {
             HttpResponse<?> response = (HttpResponse<?>) body;
             response.setMeta(meta);
