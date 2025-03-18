@@ -1,10 +1,11 @@
-package com.blooming.api.signup;
+package com.blooming.api.service.user;
 
 import com.blooming.api.entity.Role;
 import com.blooming.api.entity.RoleEnum;
 import com.blooming.api.entity.User;
 import com.blooming.api.repository.role.IRoleRepository;
 import com.blooming.api.repository.user.IUserRepository;
+import com.blooming.api.service.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

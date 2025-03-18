@@ -7,7 +7,7 @@ import com.blooming.api.response.LogInResponse;
 import com.blooming.api.service.role.RoleService;
 import com.blooming.api.service.security.AuthService;
 import com.blooming.api.service.security.JwtService;
-import com.blooming.api.signup.UserService;
+import com.blooming.api.service.user.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

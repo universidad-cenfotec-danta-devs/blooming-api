@@ -6,7 +6,7 @@ import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.service.plant.PlantIdentifiedService;
 import com.blooming.api.service.plantAI.IPlantAIService;
 import com.blooming.api.service.security.JwtService;
-import com.blooming.api.signup.IUserService;
+import com.blooming.api.service.user.IUserService;
 import com.blooming.api.service.watering.WateringPlanService;
 import com.blooming.api.utils.PaginationUtils;
 import jakarta.servlet.http.HttpServletRequest;

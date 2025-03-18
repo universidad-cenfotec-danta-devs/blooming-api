@@ -2,7 +2,7 @@ package com.blooming.api.controller;
 
 import com.blooming.api.entity.RoleEnum;
 import com.blooming.api.entity.User;
-import com.blooming.api.signup.UserService;
+import com.blooming.api.service.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
