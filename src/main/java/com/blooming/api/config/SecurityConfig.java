@@ -1,7 +1,6 @@
 package com.blooming.api.config;
 
 import com.blooming.api.security.JwtAuthenticationFilter;
-import com.blooming.api.service.security.GoogleLoginSuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -37,19 +36,16 @@ public class SecurityConfig {
 
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final GoogleLoginSuccessHandler googleLoginSuccessHandler;
 
     /**
      * Constructor for SecurityConfig.
      *
      * @param authenticationProvider    The authentication provider that handles the authentication process.
      * @param jwtAuthenticationFilter   The filter that manages JWT-based authentication and validation.
-     * @param googleLoginSuccessHandler The success handler for Google OAuth2 authentication.
-     */
-    public SecurityConfig(AuthenticationProvider authenticationProvider, JwtAuthenticationFilter jwtAuthenticationFilter, GoogleLoginSuccessHandler googleLoginSuccessHandler) {
+    */
+    public SecurityConfig(AuthenticationProvider authenticationProvider, JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.authenticationProvider = authenticationProvider;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.googleLoginSuccessHandler = googleLoginSuccessHandler;
     }
 
     /**
@@ -67,12 +63,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, LOG_IN_URI).permitAll()
                         .anyRequest().authenticated()
                 )
-                .oauth2Login(oauth2 -> oauth2
-                        .successHandler(googleLoginSuccessHandler)
-                )
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+
         return httpSecurity.build();
     }
 }

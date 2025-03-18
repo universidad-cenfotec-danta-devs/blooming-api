@@ -21,13 +21,13 @@ public class GoogleService implements IGoogleService {
 
     private final RestTemplate googleRestTemplate;
 
-    @Value("${google.clientId}")
+    @Value("${google.client.id}")
     private String googleClientId;
 
     /**
      * Constructor for GoogleService.
      *
-     * @param userRepository The repository for user data persistence.
+     * @param userRepository     The repository for user data persistence.
      * @param googleRestTemplate The RestTemplate for making HTTP requests to Google's API.
      */
     public GoogleService(IUserRepository userRepository, RestTemplate googleRestTemplate) {

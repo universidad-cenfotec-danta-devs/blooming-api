@@ -61,9 +61,9 @@ public class AuthController {
      * @param googleToken The Google OAuth2 token provided by the client.
      * @return A response entity containing the JWT token and expiration time.
      */
-    @PostMapping("/logInWithGoogle")
-    public ResponseEntity<LogInResponse> authenticateWithGoogle(@RequestParam("token") String googleToken) {
-        User googleUser = googleService.authenticateWithGoogle(googleToken);  // Assumes GoogleService handles token validation
+    @PostMapping("/logInWithGoogle/{token}")
+    public ResponseEntity<LogInResponse> authenticateWithGoogle(@PathVariable("token") String googleToken) {
+        User googleUser = googleService.authenticateWithGoogle(googleToken);
         String jwtToken = jwtService.generateToken(googleUser);
         LogInResponse logInResponse = LogInResponse.builder()
                 .token(jwtToken)
