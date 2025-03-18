@@ -4,7 +4,7 @@ import com.blooming.api.entity.Role;
 import com.blooming.api.entity.RoleEnum;
 import com.blooming.api.entity.User;
 import com.blooming.api.service.role.IRoleService;
-import com.blooming.api.service.user.IUserService;
+import com.blooming.api.signup.IUserService;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;

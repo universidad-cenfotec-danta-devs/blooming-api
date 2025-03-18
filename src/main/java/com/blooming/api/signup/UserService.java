@@ -1,4 +1,4 @@
-package com.blooming.api.service.user;
+package com.blooming.api.signup;
 
 import com.blooming.api.entity.Role;
 import com.blooming.api.entity.RoleEnum;
