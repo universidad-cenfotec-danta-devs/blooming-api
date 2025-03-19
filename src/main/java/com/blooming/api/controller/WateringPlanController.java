@@ -10,6 +10,7 @@ import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.service.google.FileGeneratorService;
 import com.blooming.api.service.plant.PlantIdentifiedService;
 import com.blooming.api.service.plantAI.IPlantAIService;
+import com.blooming.api.service.s3.IS3Service;
 import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
 import com.blooming.api.service.watering.WateringPlanService;
@@ -23,6 +24,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,14 +39,16 @@ public class WateringPlanController {
     private final PlantIdentifiedService plantIdentifiedService;
     private final WateringPlanService wateringPlanService;
     private final FileGeneratorService fileGeneratorService;
+    private final IS3Service s3Service;
 
-    public WateringPlanController(JwtService jwtService, IUserService userService, IPlantAIService plantAIService, PlantIdentifiedService plantIdentifiedService, WateringPlanService wateringPlanService, FileGeneratorService fileGeneratorService) {
+    public WateringPlanController(JwtService jwtService, IUserService userService, IPlantAIService plantAIService, PlantIdentifiedService plantIdentifiedService, WateringPlanService wateringPlanService, FileGeneratorService fileGeneratorService, IS3Service s3Service) {
         this.jwtService = jwtService;
         this.userService = userService;
         this.plantAIService = plantAIService;
         this.plantIdentifiedService = plantIdentifiedService;
         this.fileGeneratorService = fileGeneratorService;
         this.wateringPlanService = wateringPlanService;
+        this.s3Service = s3Service;
     }
 
 
@@ -140,10 +144,20 @@ public class WateringPlanController {
     @PatchMapping("/addImageToWateringDay/{wateringDayId}")
     public ResponseEntity<?> addImageToWateringDay(
             @PathVariable Long wateringDayId,
-            @RequestParam("img") MultipartFile image,
+            @RequestParam("img") MultipartFile img,
             HttpServletRequest request) {
 
-        WateringDay updatedWateringDay = wateringPlanService.addImageToWateringDay(wateringDayId, image);
+        String imageUrl;
+        try {
+            imageUrl = s3Service.uploadFile("wateringDays", img);
+        } catch (IOException e) {
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.INTERNAL_SERVER_ERROR.name(),
+                    "Error uploading img to S3",
+                    HttpStatus.INTERNAL_SERVER_ERROR, request);
+        }
+
+        WateringDay updatedWateringDay = wateringPlanService.addImageToWateringDay(wateringDayId, imageUrl);
         return new GlobalHandlerResponse()
                 .handleResponse(HttpStatus.OK.name(),
                         updatedWateringDay, HttpStatus.OK, request);

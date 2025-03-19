@@ -6,7 +6,6 @@ import com.blooming.api.entity.WateringPlan;
 import com.blooming.api.response.dto.WateringDayDTO;
 import com.blooming.api.response.dto.WateringPlanDTO;
 import org.springframework.data.domain.Page;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -17,7 +16,7 @@ public interface IWateringPlanService {
 
     WateringPlan getWateringPlanById(Long id);
 
-    WateringDay addImageToWateringDay(Long wateringDayId, MultipartFile image);
+    WateringDay addImageToWateringDay(Long wateringDayId, String imageUrl);
 
     boolean activateWateringPlans(PlantIdentified plantIdentified);
 
