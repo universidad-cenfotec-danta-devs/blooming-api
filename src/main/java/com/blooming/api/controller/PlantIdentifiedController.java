@@ -76,7 +76,7 @@ public class PlantIdentifiedController {
             PlantIdentified plantIdentified = plantAIService.getPlantInformationByName(plantName, tokenPlant);
             plantIdentified.setUser(user.get());
 
-            String imageUrl = null;
+            String imageUrl;
             try {
                 imageUrl = s3Service.uploadFile("plantsIdentified", img);
             } catch (IOException e) {
