@@ -28,6 +28,11 @@ public class User implements UserDetails {
 
     @Getter
     @Setter
+    @Column(unique = true)
+    private String googleId;
+
+    @Getter
+    @Setter
     @Column(unique = true, length = 100, nullable = false)
     private String email;
 
