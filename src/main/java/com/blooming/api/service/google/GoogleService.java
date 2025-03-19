@@ -69,38 +69,20 @@ public class GoogleService implements IGoogleService {
      * @throws GoogleTokenValidationException If the token is invalid or the client ID does not match.
      */
     @Override
-    public User authenticateWithGoogle(String googleToken) {
+    public GoogleUser decryptGoogleToken(String googleToken) {
         // Send the token to Google's token info endpoint for validation
         String url = "https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=" + googleToken;
 
         ResponseEntity<GoogleUser> response = googleRestTemplate.getForEntity(url, GoogleUser.class);
 
-        // Validate the response from Google
         if (response.getStatusCode().is2xxSuccessful()) {
             GoogleUser googleUserInfo = response.getBody();
 
             if (googleUserInfo == null || !googleClientId.equals(googleUserInfo.getAud())) {
                 throw new GoogleTokenValidationException("Invalid Google token or mismatched client ID");
             }
+            return googleUserInfo;
 
-            String email = googleUserInfo.getEmail();
-            String profileImageUrl = googleUserInfo.getPicture();
-
-            // Check if the user already exists
-            User existingUser = userRepository.findByEmail(email).orElse(null);
-
-            if (existingUser != null) {
-                // Update the user's profile image if needed
-                existingUser.setProfileImageUrl(profileImageUrl);
-                return userRepository.save(existingUser);
-            }
-
-            // Create a new user if not found
-            User newUser = new User();
-            newUser.setEmail(email);
-            newUser.setProfileImageUrl(profileImageUrl);
-
-            return userRepository.save(newUser);
         } else {
             throw new GoogleTokenValidationException("Google token validation failed");
         }
