@@ -1,11 +1,14 @@
 package com.blooming.api.controller;
 
+import com.blooming.api.entity.RoleEnum;
 import com.blooming.api.entity.User;
 import com.blooming.api.request.LogInRequest;
 import com.blooming.api.response.LogInResponse;
 import com.blooming.api.service.google.GoogleService;
+import com.blooming.api.service.role.RoleService;
 import com.blooming.api.service.security.AuthService;
 import com.blooming.api.service.security.JwtService;
+import com.blooming.api.service.user.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -33,6 +36,14 @@ public class AuthController {
         this.authService = authService;
         this.jwtService = jwtService;
         this.googleService = googleService;
+
+    private final UserService userService;
+
+    public AuthController(AuthService authService, JwtService jwtService, UserService userService, RoleService roleService) {
+        this.authService = authService;
+        this.jwtService = jwtService;
+        this.userService = userService;
+
     }
 
     /**
@@ -53,6 +64,7 @@ public class AuthController {
         return ResponseEntity.ok(logInResponse);
     }
 
+
     /**
      * Endpoint for user login using Google OAuth2 token.
      * Validates the Google token, retrieves the user's information, generates a JWT token,
@@ -70,6 +82,11 @@ public class AuthController {
                 .expiresIn(jwtService.getExpirationTime())
                 .build();
         return ResponseEntity.ok(logInResponse);
+
+    @PostMapping("/signup")
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
+        return userService.register(user, RoleEnum.SIMPLE_USER);
+
     }
 
 }

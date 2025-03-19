@@ -29,7 +29,7 @@ public class SecurityConfig {
     private final String SIMPLE_USER = "SIMPLE_USER";
     private final String NURSERY_USER = "NURSERY_USER";
 
-    private final String LOG_IN_URI = "/api/users/logIn";
+    private final String LOG_IN_SIGN_IN_URI = "/api/users/**";
     private final String BASE_URI_PLANT = "/api/plant";
     private final String BASE_URI_PLANT_AI = "/api/plantAI";
     private final String BASE_URI_WATERING_PLAN = "/api/wateringPlan";
@@ -60,7 +60,7 @@ public class SecurityConfig {
         httpSecurity.csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers(HttpMethod.POST, LOG_IN_URI).permitAll()
+                        .requestMatchers(HttpMethod.POST, LOG_IN_SIGN_IN_URI).permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
