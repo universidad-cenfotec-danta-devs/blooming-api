@@ -14,6 +14,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Security configuration for the application.
+ * This class defines route protection, session management, and integration of authentication and authorization filters.
+ * It enables JWT and Google OAuth2 authentication, configuring both public and private routes.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -32,11 +37,24 @@ public class SecurityConfig {
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    /**
+     * Constructor for SecurityConfig.
+     *
+     * @param authenticationProvider    The authentication provider that handles the authentication process.
+     * @param jwtAuthenticationFilter   The filter that manages JWT-based authentication and validation.
+    */
     public SecurityConfig(AuthenticationProvider authenticationProvider, JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.authenticationProvider = authenticationProvider;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
+    /**
+     * Configures the security filter chain, including route protection, authentication, and session management.
+     *
+     * @param httpSecurity The HttpSecurity object to configure security settings.
+     * @return A configured SecurityFilterChain instance.
+     * @throws Exception if an error occurs during security configuration.
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.csrf(AbstractHttpConfigurer::disable)
@@ -48,6 +66,8 @@ public class SecurityConfig {
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+
         return httpSecurity.build();
     }
 }
