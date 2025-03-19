@@ -1,5 +1,6 @@
 package com.blooming.api.controller;
 
+import com.blooming.api.entity.Role;
 import com.blooming.api.entity.RoleEnum;
 import com.blooming.api.entity.User;
 import com.blooming.api.request.LogInRequest;
@@ -23,7 +24,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final UserService userService;
 
-    public AuthController(AuthService authService, JwtService jwtService, UserService userService, RoleService roleService) {
+    public AuthController(AuthService authService, JwtService jwtService, UserService userService) {
         this.authService = authService;
         this.jwtService = jwtService;
         this.userService = userService;
@@ -42,7 +43,9 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
-        return userService.register(user, RoleEnum.SIMPLE_USER);
+        Role role = user.getRole();
+        System.out.println(role.getName());
+        return userService.register(user, role.getName());
     }
 
 }
