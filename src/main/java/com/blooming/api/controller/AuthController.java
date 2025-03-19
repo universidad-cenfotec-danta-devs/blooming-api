@@ -1,17 +1,20 @@
 package com.blooming.api.controller;
 
+import com.blooming.api.entity.GoogleUser;
 import com.blooming.api.entity.RoleEnum;
 import com.blooming.api.entity.User;
 import com.blooming.api.request.LogInRequest;
 import com.blooming.api.response.LogInResponse;
-import com.blooming.api.service.google.GoogleService;
-import com.blooming.api.service.role.RoleService;
+import com.blooming.api.service.google.IGoogleService;
+import com.blooming.api.service.role.IRoleService;
 import com.blooming.api.service.security.AuthService;
 import com.blooming.api.service.security.JwtService;
-import com.blooming.api.service.user.UserService;
+import com.blooming.api.service.user.IUserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 /**
  * Controller for handling user authentication and login requests.
@@ -23,28 +26,24 @@ public class AuthController {
 
     private final AuthService authService;
     private final JwtService jwtService;
-    private final GoogleService googleService;
+    private final IGoogleService googleService;
+    private final IUserService userService;
+
 
     /**
      * Constructor for AuthController.
      *
-     * @param authService The service for authenticating users with email/password.
-     * @param jwtService The service for generating and validating JWT tokens.
+     * @param authService   The service for authenticating users with email/password.
+     * @param jwtService    The service for generating and validating JWT tokens.
      * @param googleService The service for handling Google OAuth2 authentication.
      */
-    public AuthController(AuthService authService, JwtService jwtService, GoogleService googleService) {
+    public AuthController(AuthService authService, JwtService jwtService, IGoogleService googleService, IUserService userService) {
         this.authService = authService;
         this.jwtService = jwtService;
         this.googleService = googleService;
-
-    private final UserService userService;
-
-    public AuthController(AuthService authService, JwtService jwtService, UserService userService, RoleService roleService) {
-        this.authService = authService;
-        this.jwtService = jwtService;
         this.userService = userService;
-
     }
+
 
     /**
      * Endpoint for user login with email and password.
@@ -56,14 +55,8 @@ public class AuthController {
     @PostMapping("/logIn")
     public ResponseEntity<LogInResponse> authenticate(@Valid @RequestBody LogInRequest logInRequest) {
         User authenticatedUser = authService.authenticate(logInRequest.email(), logInRequest.password());
-        String jwtToken = jwtService.generateToken(authenticatedUser);
-        LogInResponse logInResponse = LogInResponse.builder()
-                .token(jwtToken)
-                .expiresIn(jwtService.getExpirationTime())
-                .build();
-        return ResponseEntity.ok(logInResponse);
+        return generateLogInResponse(authenticatedUser);
     }
-
 
     /**
      * Endpoint for user login using Google OAuth2 token.
@@ -75,13 +68,17 @@ public class AuthController {
      */
     @PostMapping("/logInWithGoogle/{token}")
     public ResponseEntity<LogInResponse> authenticateWithGoogle(@PathVariable("token") String googleToken) {
-        User googleUser = googleService.authenticateWithGoogle(googleToken);
-        String jwtToken = jwtService.generateToken(googleUser);
-        LogInResponse logInResponse = LogInResponse.builder()
-                .token(jwtToken)
-                .expiresIn(jwtService.getExpirationTime())
-                .build();
-        return ResponseEntity.ok(logInResponse);
+        GoogleUser googleUser = googleService.decryptGoogleToken(googleToken);
+
+        User user = new User();
+        user.setEmail(googleUser.getEmail());
+        user.setPassword(googleUser.getSub());
+        user.setProfileImageUrl(googleUser.getPicture());
+        userService.register(user, RoleEnum.SIMPLE_USER);
+
+        User authenticatedUser = authService.authenticate(googleUser.getEmail(), googleUser.getSub());
+        return generateLogInResponse(authenticatedUser);
+    }
 
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
@@ -89,4 +86,19 @@ public class AuthController {
 
     }
 
+    /**
+     * Helper method to generate the login response with JWT token and expiration time.
+     *
+     * @param user The authenticated user.
+     * @return A ResponseEntity containing the login response.
+     */
+    private ResponseEntity<LogInResponse> generateLogInResponse(User user) {
+        String jwtToken = jwtService.generateToken(user);
+        LogInResponse logInResponse = LogInResponse.builder()
+                .token(jwtToken)
+                .expiresIn(jwtService.getExpirationTime())
+                .build();
+        return ResponseEntity.ok(logInResponse);
+    }
 }
+
