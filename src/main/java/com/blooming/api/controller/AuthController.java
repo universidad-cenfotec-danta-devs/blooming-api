@@ -29,8 +29,7 @@ public class AuthController {
     private final AuthService authService;
     private final JwtService jwtService;
     private final IGoogleService googleService;
-    private final IUserService iUserService;
-    private final UserService userService;
+    private final IUserService userService;
 
     /**
      * Constructor for AuthController.
@@ -39,11 +38,10 @@ public class AuthController {
      * @param jwtService    The service for generating and validating JWT tokens.
      * @param googleService The service for handling Google OAuth2 authentication.
      */
-    public AuthController(AuthService authService, JwtService jwtService, IGoogleService googleService, IUserService iUserService, UserService userService) {
+    public AuthController(AuthService authService, JwtService jwtService, IGoogleService googleService, IUserService userService) {
         this.authService = authService;
         this.jwtService = jwtService;
         this.googleService = googleService;
-        this.iUserService = iUserService;
         this.userService = userService;
     }
 
@@ -81,7 +79,7 @@ public class AuthController {
         GoogleUser googleUser = googleService.decryptGoogleToken(googleToken);
 
         // Check if user already exists in the system
-        Optional<User> existingUserOpt = iUserService.findByEmail(googleUser.getEmail());
+        Optional<User> existingUserOpt = userService.findByEmail(googleUser.getEmail());
 
         String GOOGLE_DEFAULT_PASSWORD = "google_default_password";
         if (existingUserOpt.isEmpty()) {
@@ -91,7 +89,7 @@ public class AuthController {
             user.setEmail(googleUser.getEmail());
             user.setPassword(GOOGLE_DEFAULT_PASSWORD);
             user.setProfileImageUrl(googleUser.getPicture());
-            iUserService.register(user, RoleEnum.SIMPLE_USER); // Register the new user
+            userService.register(user, RoleEnum.SIMPLE_USER); // Register the new user
         }
 
         // Authenticate the user
