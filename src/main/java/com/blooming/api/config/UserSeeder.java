@@ -9,6 +9,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
+import java.util.Date;
 import java.util.Optional;
 
 @Component
@@ -76,6 +77,9 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
         }
         User user1 = new User();
         user1.setEmail(USER_EMAIL);
+        user1.setName("Simple User");
+        user1.setGender("male");
+        user1.setDateOfBirth(new Date());
         user1.setPassword("user123");
         user1.setRole(optionalRole.get());
         userService.register(user1, RoleEnum.SIMPLE_USER);
@@ -92,6 +96,9 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
         }
         User superAdmin = new User();
         superAdmin.setEmail(ADMIN_USER);
+        superAdmin.setName("Admin User");
+        superAdmin.setGender("male");
+        superAdmin.setDateOfBirth(new Date());
         superAdmin.setPassword("admin");
         superAdmin.setRole(optionalRole.get());
         userService.register(superAdmin, RoleEnum.ADMIN_USER);
@@ -109,6 +116,9 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
         }
         User designerUser = new User();
         designerUser.setEmail(DESIGNER_USER);
+        designerUser.setName("Designer User");
+        designerUser.setGender("male");
+        designerUser.setDateOfBirth(new Date());
         designerUser.setPassword("designer123");
         designerUser.setRole(optionalRole.get());
         userService.register(designerUser, RoleEnum.DESIGNER_USER);
@@ -126,6 +136,9 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
         }
         User nurseryUser = new User();
         nurseryUser.setEmail(NURSERY_USER);
+        nurseryUser.setName("Nursery User");
+        nurseryUser.setGender("male");
+        nurseryUser.setDateOfBirth(new Date());
         nurseryUser.setPassword("nursery123");
         nurseryUser.setRole(optionalRole.get());
         userService.register(nurseryUser, RoleEnum.NURSERY_USER);
