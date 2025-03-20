@@ -43,6 +43,21 @@ public class User implements UserDetails {
 
     @Getter
     @Setter
+    @Column(nullable = false)
+    private String name;
+
+    @Getter
+    @Setter
+    @Column(nullable = false)
+    private Date dateOfBirth;
+
+    @Getter
+    @Setter
+    @Column(nullable = false)
+    private String gender;
+
+    @Getter
+    @Setter
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 

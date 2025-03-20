@@ -1,5 +1,6 @@
 package com.blooming.api.controller;
 
+import com.blooming.api.entity.Role;
 import com.blooming.api.entity.GoogleUser;
 import com.blooming.api.entity.RoleEnum;
 import com.blooming.api.entity.User;
@@ -9,6 +10,7 @@ import com.blooming.api.service.google.IGoogleService;
 import com.blooming.api.service.security.AuthService;
 import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
+import com.blooming.api.service.user.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -27,8 +29,8 @@ public class AuthController {
     private final AuthService authService;
     private final JwtService jwtService;
     private final IGoogleService googleService;
-    private final IUserService userService;
-
+    private final IUserService iUserService;
+    private final UserService userService;
 
     /**
      * Constructor for AuthController.
@@ -37,10 +39,11 @@ public class AuthController {
      * @param jwtService    The service for generating and validating JWT tokens.
      * @param googleService The service for handling Google OAuth2 authentication.
      */
-    public AuthController(AuthService authService, JwtService jwtService, IGoogleService googleService, IUserService userService) {
+    public AuthController(AuthService authService, JwtService jwtService, IGoogleService googleService, IUserService iUserService, UserService userService) {
         this.authService = authService;
         this.jwtService = jwtService;
         this.googleService = googleService;
+        this.iUserService = iUserService;
         this.userService = userService;
     }
 
@@ -78,7 +81,7 @@ public class AuthController {
         GoogleUser googleUser = googleService.decryptGoogleToken(googleToken);
 
         // Check if user already exists in the system
-        Optional<User> existingUserOpt = userService.findByEmail(googleUser.getEmail());
+        Optional<User> existingUserOpt = iUserService.findByEmail(googleUser.getEmail());
 
         String GOOGLE_DEFAULT_PASSWORD = "google_default_password";
         if (existingUserOpt.isEmpty()) {
@@ -88,7 +91,7 @@ public class AuthController {
             user.setEmail(googleUser.getEmail());
             user.setPassword(GOOGLE_DEFAULT_PASSWORD);
             user.setProfileImageUrl(googleUser.getPicture());
-            userService.register(user, RoleEnum.SIMPLE_USER); // Register the new user
+            iUserService.register(user, RoleEnum.SIMPLE_USER); // Register the new user
         }
 
         // Authenticate the user
@@ -101,8 +104,8 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
-        return userService.register(user, RoleEnum.SIMPLE_USER);
-
+        Role role = user.getRole();
+        return userService.register(user, role.getName());
     }
 
     /**
