@@ -28,6 +28,11 @@ public class User implements UserDetails {
 
     @Getter
     @Setter
+    @Column(unique = true)
+    private String googleId;
+
+    @Getter
+    @Setter
     @Column(unique = true, length = 100, nullable = false)
     private String email;
 
@@ -35,6 +40,21 @@ public class User implements UserDetails {
     @Setter
     @Column(nullable = false)
     private String password;
+
+    @Getter
+    @Setter
+    @Column(nullable = false)
+    private String name;
+
+    @Getter
+    @Setter
+    @Column(nullable = false)
+    private Date dateOfBirth;
+
+    @Getter
+    @Setter
+    @Column(nullable = false)
+    private String gender;
 
     @Getter
     @Setter
