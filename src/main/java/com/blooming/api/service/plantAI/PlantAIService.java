@@ -5,6 +5,7 @@ import com.blooming.api.entity.PlantIdentified;
 import com.blooming.api.response.dto.HealthAssessmentDTO;
 import com.blooming.api.response.dto.WateringDayDTO;
 import com.blooming.api.response.dto.PlantSuggestionDTO;
+import com.blooming.api.utils.HttpUtils;
 import com.blooming.api.utils.ParsingUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,10 +23,11 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static com.blooming.api.utils.ParsingUtils.parsePlantSuggestions;
+
 @Service
 public class PlantAIService implements IPlantAIService {
 
-    public static final String API_KEY_HEADER = "Api-Key";
     public static final String DETAIL_PARAMS = "?details=watering,best_watering,best_light_condition,best_soil_type";
 
     private final RestTemplate restTemplate;
@@ -59,10 +61,10 @@ public class PlantAIService implements IPlantAIService {
                     "similar_images": true
                 }
                 """.formatted(base64Image);
-        HttpHeaders headers = createHeaders();
+        HttpHeaders headers = HttpUtils.createHeaders(apiKey);
         var requestEntity = new HttpEntity<>(jsonBody, headers);
         ResponseEntity<String> response = makeRequestToPlantAI(apiIdentifyUrl, HttpMethod.POST, requestEntity);
-        return ParsingUtils.parsePlantSuggestions(response);
+        return parsePlantSuggestions(response);
     }
 
     @Override
@@ -74,7 +76,7 @@ public class PlantAIService implements IPlantAIService {
                     "images": ["%s"]
                 }
                 """.formatted(base64Image);
-        HttpHeaders headers = createHeaders();
+        HttpHeaders headers = HttpUtils.createHeaders(apiKey);
         var requestEntity = new HttpEntity<>(jsonBody, headers);
         ResponseEntity<String> response = makeRequestToPlantAI(apiPlantHealthUrl, HttpMethod.POST, requestEntity);
         return ParsingUtils.parseHealthAssessment(response);
@@ -83,7 +85,7 @@ public class PlantAIService implements IPlantAIService {
     @Override
     public PlantIdentified getPlantInformationByName(String plantName, String tokenPlant) {
         String accessTokenForDetails = searchPlantByScientificName(plantName).orElseThrow(() -> new EntityNotFoundException("Plant not found with scientific name: " + plantName));
-        var headers = createHeaders();
+        var headers = HttpUtils.createHeaders(apiKey);
         var requestEntity = new HttpEntity<>(headers);
         String url = apiPlantBaseUrl + accessTokenForDetails + DETAIL_PARAMS;
         ResponseEntity<String> response = makeRequestToPlantAI(url, HttpMethod.GET, requestEntity);
@@ -101,7 +103,7 @@ public class PlantAIService implements IPlantAIService {
                 }
                 """, currentDate, currentDate);
 
-        HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, createHeaders());
+        HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, HttpUtils.createHeaders(apiKey));
         ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(idAccessToken), HttpMethod.POST, requestEntity);
         String wateringDates = ParsingUtils.parseWateringDatesToString(response);
         return Arrays.asList(wateringDates.split("\n"));
@@ -116,7 +118,7 @@ public class PlantAIService implements IPlantAIService {
                 }
                 """, wateringDates);
 
-        HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, createHeaders());
+        HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, HttpUtils.createHeaders(apiKey));
         ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(tokenPlant), HttpMethod.POST, requestEntity);
         return ParsingUtils.parseWateringDays(response);
     }
@@ -130,7 +132,7 @@ public class PlantAIService implements IPlantAIService {
                 }
                 """, question);
 
-        HttpHeaders headers = createHeaders();
+        HttpHeaders headers = HttpUtils.createHeaders(apiKey);
         HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, headers);
         ResponseEntity<String> response = makeRequestToPlantAI(buildAskPlantIdUrl(plantToken), HttpMethod.POST, requestEntity);
 
@@ -138,10 +140,9 @@ public class PlantAIService implements IPlantAIService {
         return ParsingUtils.getLastAnswerFromResponse(jsonNode);
     }
 
-
     private Optional<String> searchPlantByScientificName(String plantName) {
 
-        HttpHeaders headers = createHeaders();
+        HttpHeaders headers = HttpUtils.createHeaders(apiKey);
         HttpEntity<Object> requestEntity = new HttpEntity<>(headers);
         String url = apiPlantSearchUrl + plantName;
         ResponseEntity<String> response = makeRequestToPlantAI(url, HttpMethod.GET, requestEntity);
@@ -161,13 +162,6 @@ public class PlantAIService implements IPlantAIService {
     @Retryable(maxAttempts = 6, backoff = @Backoff(delay = 10000, multiplier = 2))
     private ResponseEntity<String> makeRequestToPlantAI(String url, HttpMethod method, HttpEntity<?> requestEntity) {
         return restTemplate.exchange(url, method, requestEntity, String.class);
-    }
-
-    private HttpHeaders createHeaders() {
-        return new HttpHeaders() {{
-            set(API_KEY_HEADER, apiKey);
-            setContentType(MediaType.APPLICATION_JSON);
-        }};
     }
 
 }
