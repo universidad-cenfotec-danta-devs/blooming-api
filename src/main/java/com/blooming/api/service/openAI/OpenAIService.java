@@ -36,7 +36,7 @@ public class OpenAIService implements IOpenAIService {
                 }
                 """, canton);
 
-        HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, HttpUtils.createHeaders(apiKey));
+        HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, HttpUtils.createHeadersForOpenAI(apiKey));
 
         ResponseEntity<String> response;
         try {
