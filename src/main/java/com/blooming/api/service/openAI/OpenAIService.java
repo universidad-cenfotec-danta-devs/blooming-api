@@ -1,19 +1,25 @@
 package com.blooming.api.service.openAI;
 
+import com.blooming.api.entity.Canton;
 import com.blooming.api.exception.ParsingException;
+import com.blooming.api.repository.canton.ICantonRepository;
 import com.blooming.api.utils.HttpUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Optional;
+
 @Service
 public class OpenAIService implements IOpenAIService {
 
+    private final ICantonRepository cantonRepository;
     private final RestTemplate restTemplate;
 
     @Value("${open.ai.api.key}")
@@ -22,30 +28,42 @@ public class OpenAIService implements IOpenAIService {
     @Value("${open.ai.api.base.url}")
     private String apiUrl;
 
-    public OpenAIService(RestTemplate restTemplate) {
+    public OpenAIService(ICantonRepository cantonRepository, RestTemplate restTemplate) {
+        this.cantonRepository = cantonRepository;
         this.restTemplate = restTemplate;
     }
 
     @Override
-    public String getFaunaByLocation(String canton) {
-        String jsonBody = String.format("""
-                {
-                    "model": "gpt-3.5-turbo",
-                    "messages": [{"role": "user", "content": "Dime en un texto qué tipo de flora se puede encontrar en el cantón de Costa Rica llamado %s."}],
-                    "max_tokens": 800
-                }
-                """, canton);
+    public String getFaunaByLocation(String cantonName) {
+        Optional<Canton> canton = cantonRepository.findByName(cantonName.toLowerCase());
 
-        HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, HttpUtils.createHeadersForOpenAI(apiKey));
+        if (canton.isPresent()) {
+            return canton.get().getFloraDescription();
+        } else {
+            String jsonBody = String.format("""
+                    {
+                        "model": "gpt-3.5-turbo",
+                        "messages": [{"role": "user", "content": "Dime en un texto qué tipo de flora se puede encontrar en el cantón de Costa Rica llamado %s."}],
+                        "max_tokens": 800
+                    }
+                    """, cantonName);
 
-        ResponseEntity<String> response;
-        try {
-            response = restTemplate.postForEntity(apiUrl, requestEntity, String.class);
-        } catch (RestClientException e) {
-            throw new RuntimeException(e);
+            HttpEntity<String> requestEntity = new HttpEntity<>(jsonBody, HttpUtils.createHeadersForOpenAI(apiKey));
+
+            ResponseEntity<String> response;
+            try {
+                response = restTemplate.postForEntity(apiUrl, requestEntity, String.class);
+            } catch (RestClientException e) {
+                throw new RuntimeException(e);
+            }
+
+            String floraDescription = extractMessage(response);
+            Canton newCanton = new Canton();
+            newCanton.setName(cantonName.toLowerCase());
+            newCanton.setFloraDescription(floraDescription);
+            cantonRepository.save(newCanton);
+            return floraDescription;
         }
-
-        return extractMessage(response);
     }
 
     private String extractMessage(ResponseEntity<String> response) {
@@ -60,6 +78,5 @@ public class OpenAIService implements IOpenAIService {
             throw new ParsingException("Error processing API response: " + response.getBody());
         }
     }
-
 
 }
