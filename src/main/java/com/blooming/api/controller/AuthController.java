@@ -1,5 +1,6 @@
 package com.blooming.api.controller;
 
+import com.blooming.api.entity.Role;
 import com.blooming.api.entity.GoogleUser;
 import com.blooming.api.entity.RoleEnum;
 import com.blooming.api.entity.User;
@@ -9,6 +10,7 @@ import com.blooming.api.service.google.IGoogleService;
 import com.blooming.api.service.security.AuthService;
 import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
+import com.blooming.api.service.user.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -28,7 +30,6 @@ public class AuthController {
     private final JwtService jwtService;
     private final IGoogleService googleService;
     private final IUserService userService;
-
 
     /**
      * Constructor for AuthController.
@@ -94,8 +95,8 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
-        return userService.register(user, RoleEnum.SIMPLE_USER);
-
+        Role role = user.getRole();
+        return userService.register(user, role.getName());
     }
 
     /**
