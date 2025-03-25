@@ -75,27 +75,20 @@ public class AuthController {
      */
     @PostMapping("/logInWithGoogle/{token}")
     public ResponseEntity<LogInResponse> authenticateWithGoogle(@PathVariable("token") String googleToken) {
-        // Decrypt Google token to extract user details
         GoogleUser googleUser = googleService.decryptGoogleToken(googleToken);
-
-        // Check if user already exists in the system
         Optional<User> existingUserOpt = userService.findByEmail(googleUser.getEmail());
 
         String GOOGLE_DEFAULT_PASSWORD = "google_default_password";
         if (existingUserOpt.isEmpty()) {
-            // If user does not exist, create a new user from the Google data
             User user = new User();
             user.setGoogleId(googleUser.getSub());
             user.setEmail(googleUser.getEmail());
             user.setPassword(GOOGLE_DEFAULT_PASSWORD);
             user.setProfileImageUrl(googleUser.getPicture());
-            userService.register(user, RoleEnum.SIMPLE_USER); // Register the new user
+            userService.register(user, RoleEnum.SIMPLE_USER);
         }
 
-        // Authenticate the user
         User authenticatedUser = authService.authenticate(googleUser.getEmail(), GOOGLE_DEFAULT_PASSWORD);
-
-        // Generate and return the JWT token response
         return generateLogInResponse(authenticatedUser);
     }
 
