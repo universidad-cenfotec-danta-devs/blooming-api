@@ -44,7 +44,7 @@ public class UserService implements IUserService {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        Optional<Role> role = roleRepository.findByName(RoleEnum.SIMPLE_USER);
+        Optional<Role> role = roleRepository.findByName(rolAssigned);
 
         if (role.isEmpty()) {
             Map<String, String> response = new HashMap<>();
@@ -52,9 +52,14 @@ public class UserService implements IUserService {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
         user.setRole(role.get());
-        User savedUser = userRepository.save(user);
+        User savedUser;
+        try {
+            savedUser = userRepository.save(user);
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        }
 
-        if(!rolAssigned.name().equals("SIMPLE_USER")) {
+        if (!rolAssigned.name().equals("SIMPLE_USER")) {
             RoleRequest roleRequest = new RoleRequest();
             roleRequest.setRoleRequested(rolAssigned.name());
             roleRequest.setRequesterId(savedUser.getId());
