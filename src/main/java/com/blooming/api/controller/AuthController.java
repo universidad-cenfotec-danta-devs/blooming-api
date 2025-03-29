@@ -81,11 +81,16 @@ public class AuthController {
         String GOOGLE_DEFAULT_PASSWORD = "google_default_password";
         if (existingUserOpt.isEmpty()) {
             User user = new User();
+            user.setName(googleUser.getName());
             user.setGoogleId(googleUser.getSub());
             user.setEmail(googleUser.getEmail());
             user.setPassword(GOOGLE_DEFAULT_PASSWORD);
             user.setProfileImageUrl(googleUser.getPicture());
-            userService.register(user, RoleEnum.SIMPLE_USER);
+            try {
+                userService.register(user, RoleEnum.SIMPLE_USER);
+            } catch (RuntimeException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         User authenticatedUser = authService.authenticate(googleUser.getEmail(), GOOGLE_DEFAULT_PASSWORD);
