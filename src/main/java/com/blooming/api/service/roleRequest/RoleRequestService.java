@@ -1,6 +1,7 @@
 package com.blooming.api.service.roleRequest;
 
 import com.blooming.api.entity.RoleRequest;
+import com.blooming.api.entity.RoleRequestEnum;
 import com.blooming.api.repository.roleRequest.IRoleRequestRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
@@ -38,7 +39,7 @@ public class RoleRequestService {
 
         RoleRequest existingRoleRequest = existingRoleRequestOpt.get();
 
-        existingRoleRequest.setRequestStatus(roleRequest.isRequestStatus());
+        existingRoleRequest.setRequestStatus(RoleRequestEnum.valueOf(roleRequest.getRoleRequested()));
 
         RoleRequest savedRoleRequest = roleRequestRepository.save(roleRequest);
         return ResponseEntity.ok(savedRoleRequest);

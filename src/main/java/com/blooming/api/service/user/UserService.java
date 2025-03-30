@@ -1,9 +1,6 @@
 package com.blooming.api.service.user;
 
-import com.blooming.api.entity.Role;
-import com.blooming.api.entity.RoleEnum;
-import com.blooming.api.entity.RoleRequest;
-import com.blooming.api.entity.User;
+import com.blooming.api.entity.*;
 import com.blooming.api.repository.role.IRoleRepository;
 import com.blooming.api.repository.roleRequest.IRoleRequestRepository;
 import com.blooming.api.repository.user.IUserRepository;
@@ -44,7 +41,7 @@ public class UserService implements IUserService {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        Optional<Role> role = roleRepository.findByName(rolAssigned);
+        Optional<Role> role = roleRepository.findByName(RoleEnum.SIMPLE_USER);
 
         if (role.isEmpty()) {
             Map<String, String> response = new HashMap<>();
@@ -52,19 +49,15 @@ public class UserService implements IUserService {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
         user.setRole(role.get());
-        User savedUser;
-        try {
-            savedUser = userRepository.save(user);
-        } catch (RuntimeException e) {
-            throw new RuntimeException(e);
-        }
+        user.setActive(true);
+        User savedUser = userRepository.save(user);
 
-        if (!rolAssigned.name().equals("SIMPLE_USER")) {
+        if(!rolAssigned.name().equals("SIMPLE_USER")) {
             RoleRequest roleRequest = new RoleRequest();
             roleRequest.setRoleRequested(rolAssigned.name());
             roleRequest.setRequesterId(savedUser.getId());
             roleRequest.setRequesterEmail(savedUser.getEmail());
-            roleRequest.setRequestStatus(false);
+            roleRequest.setRequestStatus(RoleRequestEnum.PENDING);
 
             roleRequestService.addRoleRequest(roleRequest);
         }

@@ -36,7 +36,6 @@ public class User implements UserDetails {
     @Column(unique = true, length = 100, nullable = false)
     private String email;
 
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Setter
     @Column(nullable = false)
     private String password;
@@ -73,8 +72,10 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<Purchase> purchases;
 
+    @Setter
+    @Getter
     @Column(nullable = false)
-    private boolean isActive = true;
+    private boolean active;
 
     @Setter
     @Getter

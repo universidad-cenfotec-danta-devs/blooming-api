@@ -10,7 +10,6 @@ import com.blooming.api.service.google.IGoogleService;
 import com.blooming.api.service.security.AuthService;
 import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
-import com.blooming.api.service.user.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -121,4 +120,3 @@ public class AuthController {
         return ResponseEntity.ok(logInResponse);
     }
 }
-
