@@ -36,7 +36,6 @@ public class User implements UserDetails {
     @Column(unique = true, length = 100, nullable = false)
     private String email;
 
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Setter
     @Column(nullable = false)
     private String password;
@@ -76,7 +75,7 @@ public class User implements UserDetails {
     @Setter
     @Getter
     @Column(nullable = false)
-    private boolean isActive;
+    private boolean active;
 
     @Setter
     @Getter

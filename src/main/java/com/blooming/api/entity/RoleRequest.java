@@ -28,7 +28,7 @@ public class RoleRequest {
     private String requesterEmail;
 
     @Column(nullable = false)
-    private boolean requestStatus = false;
+    private RoleRequestEnum requestStatus;
 
     @CreationTimestamp
     @Column(nullable = false)

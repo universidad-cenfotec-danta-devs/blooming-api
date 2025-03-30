@@ -1,11 +1,14 @@
 package com.blooming.api.controller;
 
+import com.blooming.api.entity.Role;
 import com.blooming.api.entity.RoleEnum;
 import com.blooming.api.entity.User;
+import com.blooming.api.repository.role.IRoleRepository;
 import com.blooming.api.repository.user.IUserRepository;
 import com.blooming.api.response.http.GlobalResponseHandler;
 import com.blooming.api.response.http.MetaResponse;
 import com.blooming.api.service.user.UserService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -34,12 +37,15 @@ public class UserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private IRoleRepository roleRepository;
+
     @PostMapping
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         return userService.register(user, RoleEnum.SIMPLE_USER);
     }
 
-    @GetMapping("/paginated")
+    @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN_USER')")
     public ResponseEntity<?> getAllUsersPaginated(@RequestParam(defaultValue = "1") int page,
                                                   @RequestParam(defaultValue = "10") int size,
@@ -56,7 +62,7 @@ public class UserController {
         return new GlobalResponseHandler()._handleResponse("User retrieved successfully", usersPage.getContent(), HttpStatus.OK, meta);
     }
 
-    @GetMapping
+    @GetMapping("/all")
     @PreAuthorize("hasAnyRole('ADMIN_USER')")
     public List<User> getAllUsers() {
         return userRepository.findAll();
@@ -64,18 +70,36 @@ public class UserController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN_USER')")
-    public User updateUser(@PathVariable Long id, @RequestBody User user, HttpServletRequest request) {
+    public User updateUser(@PathVariable Long id, @RequestBody User updatedUser) {
+        return userRepository.findById(id).map(user -> {
+            user.setName(updatedUser.getName());
+            user.setEmail(updatedUser.getEmail());
+            user.setDateOfBirth(updatedUser.getDateOfBirth());
+            user.setGender(updatedUser.getGender());
+
+            if (updatedUser.getRole() != null && updatedUser.getRole().getName() != null) {
+                Role role = roleRepository.findByName(updatedUser.getRole().getName())
+                        .orElseThrow(() -> new EntityNotFoundException("Role not found"));
+                user.setRole(role);
+            }
+
+            user.setActive(updatedUser.isActive());
+            return userRepository.save(user);
+        }).orElseThrow(() -> new EntityNotFoundException("User with id " + id + " not found"));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN_USER')")
+    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable Long id) {
         return userRepository.findById(id)
-                .map(existingUser -> {
-                    existingUser.setActive(user.isActive());
-                    existingUser.setRole(user.getRole());
-                    existingUser.setEmail(user.getEmail());
-                    existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
-                    return userRepository.save(existingUser);
+                .map(user -> {
+                    userRepository.delete(user);
+
+                    Map<String, String> response = new HashMap<>();
+                    response.put("message", "User deleted successfully");
+
+                    return ResponseEntity.ok(response);
                 })
-                .orElseGet(() -> {
-                    user.setId(id);
-                    return userRepository.save(user);
-                });
+                .orElseThrow(() -> new EntityNotFoundException("User with id " + id + " not found"));
     }
 }

@@ -1,9 +1,6 @@
 package com.blooming.api.service.user;
 
-import com.blooming.api.entity.Role;
-import com.blooming.api.entity.RoleEnum;
-import com.blooming.api.entity.RoleRequest;
-import com.blooming.api.entity.User;
+import com.blooming.api.entity.*;
 import com.blooming.api.repository.role.IRoleRepository;
 import com.blooming.api.repository.roleRequest.IRoleRequestRepository;
 import com.blooming.api.repository.user.IUserRepository;
@@ -60,7 +57,7 @@ public class UserService implements IUserService {
             roleRequest.setRoleRequested(rolAssigned.name());
             roleRequest.setRequesterId(savedUser.getId());
             roleRequest.setRequesterEmail(savedUser.getEmail());
-            roleRequest.setRequestStatus(false);
+            roleRequest.setRequestStatus(RoleRequestEnum.PENDING);
 
             roleRequestService.addRoleRequest(roleRequest);
         }
