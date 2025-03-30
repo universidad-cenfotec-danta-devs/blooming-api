@@ -47,12 +47,12 @@ public class User implements UserDetails {
 
     @Getter
     @Setter
-    @Column(nullable = false)
+    @Column
     private Date dateOfBirth;
 
     @Getter
     @Setter
-    @Column(nullable = false)
+    @Column
     private String gender;
 
     @Getter
@@ -138,4 +138,3 @@ public class User implements UserDetails {
     }
 
 }
-

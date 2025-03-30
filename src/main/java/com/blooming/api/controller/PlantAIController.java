@@ -1,6 +1,8 @@
 package com.blooming.api.controller;
 
 import com.blooming.api.entity.PlantIdentified;
+import com.blooming.api.request.LatLongRequest;
+import com.blooming.api.request.LogInRequest;
 import com.blooming.api.request.QuestionRequest;
 import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.service.plant.IPlantIdentifiedService;
