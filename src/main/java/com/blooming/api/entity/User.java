@@ -36,10 +36,24 @@ public class User implements UserDetails {
     @Column(unique = true, length = 100, nullable = false)
     private String email;
 
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Setter
     @Column(nullable = false)
     private String password;
+
+    @Getter
+    @Setter
+    @Column(nullable = false)
+    private String name;
+
+    @Getter
+    @Setter
+    @Column
+    private Date dateOfBirth;
+
+    @Getter
+    @Setter
+    @Column
+    private String gender;
 
     @Getter
     @Setter
@@ -58,8 +72,10 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<Purchase> purchases;
 
+    @Setter
+    @Getter
     @Column(nullable = false)
-    private boolean isActive = true;
+    private boolean active;
 
     @Setter
     @Getter
@@ -125,4 +141,3 @@ public class User implements UserDetails {
     }
 
 }
-
