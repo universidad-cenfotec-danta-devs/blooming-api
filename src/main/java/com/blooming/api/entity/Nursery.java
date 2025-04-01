@@ -25,7 +25,7 @@ public class Nursery {
     @Column(nullable = false)
     private Double longitude; // Longitud del vivero
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "nursery_admin_id")
     private User nurseryAdmin; // Usuario con el rol de NURSERY_ADMIN
 
@@ -42,4 +42,7 @@ public class Nursery {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Date updatedAt;
+
+    @OneToMany(mappedBy = "nursery")
+    private List<ProductNursery> productNurseryList;
 }
