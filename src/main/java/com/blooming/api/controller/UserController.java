@@ -5,11 +5,16 @@ import com.blooming.api.entity.RoleEnum;
 import com.blooming.api.entity.User;
 import com.blooming.api.repository.role.IRoleRepository;
 import com.blooming.api.repository.user.IUserRepository;
+import com.blooming.api.request.UserProfileUpdateRequest;
+import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.response.http.GlobalResponseHandler;
 import com.blooming.api.response.http.MetaResponse;
+import com.blooming.api.service.s3.IS3Service;
+import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,13 +22,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/users")
@@ -35,22 +39,55 @@ public class UserController {
     private IUserRepository userRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
+    private IRoleRepository roleRepository;
 
     @Autowired
-    private IRoleRepository roleRepository;
+    private IS3Service s3Service;
+
+    @Autowired
+    private JwtService jwtService;
 
     @PostMapping
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         return userService.register(user, RoleEnum.SIMPLE_USER);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER', 'NURSERY_USER')")
+    @PatchMapping("/updateProfile")
+    public ResponseEntity<?> updateUserProfile(@Valid @RequestBody UserProfileUpdateRequest userProfileUpdateRequest,
+                                               @RequestParam("profileImage") MultipartFile profileImage,
+                                               HttpServletRequest request) {
+
+        String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
+        String imageProfileUrl = "";
+        try {
+            if (profileImage != null && !profileImage.isEmpty()) {
+                imageProfileUrl = s3Service.uploadFile("user", profileImage);
+            }
+            User updated = userService.updateUserProfile(userEmail,
+                    userProfileUpdateRequest.name(),
+                    userProfileUpdateRequest.dateOfBirth(),
+                    userProfileUpdateRequest.gender(),
+                    imageProfileUrl);
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.OK.name(),
+                    updated,
+                    HttpStatus.OK, request);
+        } catch (Exception e) {
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.INTERNAL_SERVER_ERROR.name(),
+                    "Error processing request: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR, request);
+        }
+    }
+
+
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN_USER')")
     public ResponseEntity<?> getAllUsersPaginated(@RequestParam(defaultValue = "1") int page,
                                                   @RequestParam(defaultValue = "10") int size,
                                                   HttpServletRequest request) {
-        Pageable pageable = PageRequest.of(page-1, size);
+        Pageable pageable = PageRequest.of(page - 1, size);
         Page<User> usersPage = userRepository.findAll(pageable);
 
         MetaResponse meta = new MetaResponse(request.getMethod(), request.getRequestURL().toString());
