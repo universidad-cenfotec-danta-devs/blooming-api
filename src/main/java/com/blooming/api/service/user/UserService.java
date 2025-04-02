@@ -2,15 +2,16 @@ package com.blooming.api.service.user;
 
 import com.blooming.api.entity.*;
 import com.blooming.api.repository.role.IRoleRepository;
-import com.blooming.api.repository.roleRequest.IRoleRequestRepository;
 import com.blooming.api.repository.user.IUserRepository;
 import com.blooming.api.service.roleRequest.RoleRequestService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -52,7 +53,7 @@ public class UserService implements IUserService {
         user.setActive(true);
         User savedUser = userRepository.save(user);
 
-        if(!rolAssigned.name().equals("SIMPLE_USER")) {
+        if (!rolAssigned.name().equals("SIMPLE_USER")) {
             RoleRequest roleRequest = new RoleRequest();
             roleRequest.setRoleRequested(rolAssigned.name());
             roleRequest.setRequesterId(savedUser.getId());
@@ -62,6 +63,28 @@ public class UserService implements IUserService {
             roleRequestService.addRoleRequest(roleRequest);
         }
         return ResponseEntity.ok(savedUser);
+    }
+
+    @Transactional
+    @Override
+    public User updateUserProfile(String userEmail,
+                                  String name,
+                                  Date dateOfBirth,
+                                  String gender,
+                                  String profileImageUrl) {
+        return userRepository.findByEmail(userEmail).map(user -> {
+            if (name != null && !name.trim().isEmpty()) {
+                user.setName(name);
+            }
+            if (dateOfBirth != null) {
+                user.setDateOfBirth(dateOfBirth);
+            }
+            if (gender != null && !gender.trim().isEmpty()) {
+                user.setGender(gender);
+            }
+            user.setProfileImageUrl(profileImageUrl);
+            return userRepository.save(user);
+        }).orElseThrow(() -> new EntityNotFoundException("User not found"));
     }
 
     @Override
