@@ -1,5 +1,6 @@
 package com.blooming.api.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -11,6 +12,7 @@ public class ProductNursery {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "nursery_id", nullable = false)
     private Nursery nursery;

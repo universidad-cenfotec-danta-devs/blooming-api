@@ -1,8 +1,6 @@
 package com.blooming.api.service.product;
 
-import com.blooming.api.entity.Nursery;
 import com.blooming.api.entity.Product;
-import com.blooming.api.repository.nursery.INurseryRepository;
 import com.blooming.api.repository.product.IProductRepository;
 import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.response.http.MetaResponse;
@@ -23,9 +21,6 @@ public class ProductService implements IProductService{
 
     @Autowired
     private IProductRepository productRepository;
-
-    @Autowired
-    private INurseryRepository nurseryRepository;
 
     @Override
     public ResponseEntity<?> getAllProducts(int page, int size, HttpServletRequest request) {
@@ -94,15 +89,8 @@ public class ProductService implements IProductService{
 //
 //    @Override
 //
-//    public ResponseEntity<?> removeProductFromNursery(Long id, HttpServletRequest request) {
-//        return null;
-//    }
 
-//    @Override
-//    public Product createProduct(Product product) {
-//        Product createdProduct = productRepository.save(product);
-//        return null;
-//    }
+
 
 //    Get all products by nursery
 //      For each

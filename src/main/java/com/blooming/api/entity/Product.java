@@ -1,5 +1,6 @@
 package com.blooming.api.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -19,6 +20,7 @@ public class Product {
     @Column(nullable = false)
     private String description;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "product")
     private List<ProductNursery> productNurseryList;
 

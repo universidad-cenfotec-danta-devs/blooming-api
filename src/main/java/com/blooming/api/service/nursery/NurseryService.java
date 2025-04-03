@@ -105,7 +105,7 @@ public class NurseryService implements INurseryService{
     }
 
     @Override
-    public NurseryDTO createNursery(Nursery nursery) {
+    public ResponseEntity<?> createNursery(Nursery nursery, HttpServletRequest request) {
         Nursery createdNursery = nurseryRepository.save(nursery);
         NurseryDTO nurseryDTO = new NurseryDTO();
 
@@ -115,7 +115,7 @@ public class NurseryService implements INurseryService{
         nurseryDTO.setLatitude(createdNursery.getLatitude());
         nurseryDTO.setActive(createdNursery.isActive());
 
-        return nurseryDTO;
+        return new GlobalHandlerResponse().handleResponse("Nursery created successfully", nurseryDTO, HttpStatus.OK, request);
     }
 
     @Override

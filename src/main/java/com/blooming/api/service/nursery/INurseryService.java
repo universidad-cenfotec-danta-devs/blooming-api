@@ -15,6 +15,7 @@ public interface INurseryService {
     NurseryDTO getNurseryById(Long id);
     List<NurseryDTO> getMyNurseries(Long idNurseryAdmin);
     ResponseEntity<?> getProductsByNursery(Long idNursery, HttpServletRequest request);
-    NurseryDTO createNursery(Nursery nursery);
+    ResponseEntity<?> createNursery(Nursery nursery, HttpServletRequest request);
     NurseryDTO updateNursery(Long idNursery, UpdateNurseryRequest request);
+
 }
