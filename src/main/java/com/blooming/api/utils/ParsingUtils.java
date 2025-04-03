@@ -1,5 +1,6 @@
 package com.blooming.api.utils;
 
+import com.blooming.api.entity.Nursery;
 import com.blooming.api.entity.PlantIdentified;
 import com.blooming.api.entity.Pot;
 import com.blooming.api.entity.WateringPlan;
@@ -191,6 +192,24 @@ public class ParsingUtils {
             throw new ParsingException(e.getMessage());
         }
 
+    }
+
+    public static NurseryDTO toNurseryDTO(Nursery nursery) {
+        try {
+            NurseryDTO dto = new NurseryDTO();
+            dto.setId(nursery.getId());
+            dto.setName(nursery.getName());
+            dto.setDescription(nursery.getDescription());
+            dto.setImageUrl(nursery.getImageUrl());
+            dto.setLatitude(nursery.getLatitude());
+            dto.setLongitude(nursery.getLongitude());
+            dto.setActive(nursery.isStatus());
+            dto.setCreatedAt(nursery.getCreatedAt());
+            dto.setUpdatedAt(nursery.getUpdatedAt());
+            return dto;
+        } catch (Exception e) {
+            throw new ParsingException(e.getMessage());
+        }
     }
 
     public static PotDTO toPotDTO(Pot pot) {
