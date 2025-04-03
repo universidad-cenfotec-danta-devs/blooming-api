@@ -29,10 +29,10 @@ public class NurseryService implements INurseryService {
     @Override
     public NurseryDTO createNursery(NurseryRequest nurseryRequest, String imgUrl) {
         Nursery nursery = new Nursery();
-        nursery.setName(nursery.getName());
-        nursery.setDescription(nursery.getDescription());
-        nursery.setLatitude(nursery.getLatitude());
-        nursery.setLongitude(nursery.getLongitude());
+        nursery.setName(nurseryRequest.name());
+        nursery.setDescription(nurseryRequest.description());
+        nursery.setLatitude(nurseryRequest.latitude());
+        nursery.setLongitude(nurseryRequest.longitude());
         nursery.setImageUrl(imgUrl);
         return ParsingUtils.toNurseryDTO(nurseryRepository.save(nursery));
     }
@@ -40,7 +40,7 @@ public class NurseryService implements INurseryService {
     @Override
     public Page<NurseryDTO> getAllNurseries(int page, int size, boolean status) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Nursery> nurseryPage = nurseryRepository.findByStatus(status, pageable);
+        Page<Nursery> nurseryPage = nurseryRepository.findNurseriesByStatus(status, pageable);
         return nurseryPage.map(ParsingUtils::toNurseryDTO);
     }
 

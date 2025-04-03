@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 public interface INurseryRepository extends JpaRepository<Nursery, Long> {
-    Page<Nursery> findByStatus(boolean status, Pageable pageable);
+    Page<Nursery> findNurseriesByStatus(boolean status, Pageable pageable);
     Optional<Nursery> findByNurseryAdminId(Long userId);
     @Modifying
     @Transactional

@@ -38,13 +38,14 @@ public class NurseryController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
     public ResponseEntity<?> createNursery(@Valid @RequestBody NurseryRequest nurseryRequest,
-                                           @RequestParam("img") MultipartFile img,
+//                                           @RequestParam("img") MultipartFile img,
                                            HttpServletRequest request) {
         try {
-            String imgUrl = s3Service.uploadFile("nurseries", img);
-            NurseryDTO nursery = nurseryService.createNursery(nurseryRequest, imgUrl);
+//            String imgUrl = s3Service.uploadFile("nurseries", img);
+//            NurseryDTO nursery = nurseryService.createNursery(nurseryRequest, imgUrl);
+            NurseryDTO nursery = nurseryService.createNursery(nurseryRequest, "imgUrl");
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.OK.name(),
                     nursery,
@@ -58,7 +59,7 @@ public class NurseryController {
     }
 
     @PostMapping("addProductByNurseryAdmin")
-    @PreAuthorize("hasRole('NURSERY_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
     public ResponseEntity<?> addProductToNurseryByNurseryAdmin(
             @Valid @RequestBody ProductRequest productRequest,
             HttpServletRequest request) {
@@ -138,7 +139,7 @@ public class NurseryController {
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
     public ResponseEntity<?> updateNursery(@PathVariable Long id,
                                            @Valid @RequestBody NurseryUpdateRequest nurseryRequest,
                                            HttpServletRequest request) {
