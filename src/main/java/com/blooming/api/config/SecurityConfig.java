@@ -61,7 +61,8 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers(HttpMethod.POST, LOG_IN_SIGN_IN_URI).permitAll()
-                        .requestMatchers("api/nurseries/actives").permitAll()
+                        .requestMatchers(HttpMethod.GET, "api/nurseries/actives").permitAll()
+                        .requestMatchers(HttpMethod.GET, "api/nurseries/{id}").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

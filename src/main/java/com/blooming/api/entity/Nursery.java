@@ -34,7 +34,7 @@ public class Nursery {
     @Column(nullable = false)
     private Double longitude; // Longitud del vivero
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "nursery_admin_id")
     private User nurseryAdmin; // Usuario con el rol de NURSERY_ADMIN
 

@@ -9,6 +9,7 @@ import com.blooming.api.request.ProductRequest;
 import com.blooming.api.response.dto.NurseryDTO;
 import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.service.nursery.INurseryService;
+import com.blooming.api.service.product.IProductService;
 import com.blooming.api.service.s3.IS3Service;
 import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
@@ -29,17 +30,19 @@ public class NurseryController {
     private final IUserService userService;
     private final IS3Service s3Service;
     private final JwtService jwtService;
+    private final IProductService productService;
 
-    public NurseryController(INurseryService nurseryService, IUserService userService, IS3Service s3Service, JwtService jwtService) {
+    public NurseryController(INurseryService nurseryService, IUserService userService, IS3Service s3Service, JwtService jwtService, IProductService productService) {
         this.nurseryService = nurseryService;
         this.userService = userService;
         this.s3Service = s3Service;
         this.jwtService = jwtService;
+        this.productService = productService;
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN_USER')")
-    public ResponseEntity<?> getAllProducts(
+    public ResponseEntity<?> getAllNurseries(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size, HttpServletRequest request
     ){
@@ -96,6 +99,26 @@ public class NurseryController {
                             HttpStatus.INTERNAL_SERVER_ERROR.name(),
                             "Error processing request: " + e.getMessage(),
                             HttpStatus.INTERNAL_SERVER_ERROR, request));
+        }
+    }
+
+    @GetMapping("get-products/{idNursery}")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
+    
+    public ResponseEntity<?> getAllProductsByNurseryId(@PathVariable Long idNursery,
+                                                       @RequestParam(defaultValue = "1") int page,
+                                                       @RequestParam(defaultValue = "10") int size,
+                                                       HttpServletRequest request) {
+        try {
+            Page<ProductRequest> products = productService.getAllProductsFromNursery(idNursery, page, size);
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.OK.name(),
+                    products,
+                    HttpStatus.OK, request);
+        } catch (RuntimeException e) {
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.BAD_REQUEST.name(),
+                    HttpStatus.BAD_REQUEST, request);
         }
     }
 
