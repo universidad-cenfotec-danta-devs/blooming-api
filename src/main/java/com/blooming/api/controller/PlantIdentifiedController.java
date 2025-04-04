@@ -5,6 +5,7 @@ import com.blooming.api.response.dto.PlantIdentifiedDTO;
 import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.service.plant.PlantIdentifiedService;
 import com.blooming.api.service.plantAI.IPlantAIService;
+import com.blooming.api.service.s3.IS3Service;
 import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
 import com.blooming.api.service.watering.WateringPlanService;
@@ -15,7 +16,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Optional;
 
 @RestController
@@ -26,17 +29,19 @@ public class PlantIdentifiedController {
     private final IUserService userService;
     private final WateringPlanService wateringPlanService;
     private final PlantIdentifiedService plantIdentifiedService;
+    private final IS3Service s3Service;
     private final JwtService jwtService;
 
     public PlantIdentifiedController(IPlantAIService plantAIService,
                                      IUserService userService,
                                      WateringPlanService wateringPlanService,
-                                     PlantIdentifiedService plantIdentifiedService,
+                                     PlantIdentifiedService plantIdentifiedService, IS3Service s3Service,
                                      JwtService jwtService) {
         this.plantAIService = plantAIService;
         this.userService = userService;
         this.wateringPlanService = wateringPlanService;
         this.plantIdentifiedService = plantIdentifiedService;
+        this.s3Service = s3Service;
         this.jwtService = jwtService;
     }
 
@@ -45,9 +50,10 @@ public class PlantIdentifiedController {
     @PostMapping("/saveByUser/{tokenPlant}/{plantName}")
     public ResponseEntity<?> saveByUser(@PathVariable("plantName") String plantName,
                                         @PathVariable("tokenPlant") String tokenPlant,
+                                        @RequestParam("img") MultipartFile img,
                                         HttpServletRequest request) {
         String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
-        return savePlantIdentified(plantName, tokenPlant, userEmail, request);
+        return savePlantIdentified(plantName, tokenPlant, userEmail, img, request);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN_USER')")
@@ -55,15 +61,31 @@ public class PlantIdentifiedController {
     public ResponseEntity<?> saveByAdmin(@PathVariable("plantName") String plantName,
                                          @PathVariable("userEmail") String userEmail,
                                          @PathVariable("tokenPlant") String tokenPlant,
+                                         @RequestParam("img") MultipartFile img,
                                          HttpServletRequest request) {
-        return savePlantIdentified(plantName, tokenPlant, userEmail, request);
+        return savePlantIdentified(plantName, tokenPlant, userEmail, img, request);
     }
 
-    private ResponseEntity<?> savePlantIdentified(String plantName, String tokenPlant, String userEmail, HttpServletRequest request) {
+    private ResponseEntity<?> savePlantIdentified(String plantName,
+                                                  String tokenPlant,
+                                                  String userEmail,
+                                                  MultipartFile img,
+                                                  HttpServletRequest request) {
         Optional<User> user = userService.findByEmail(userEmail);
         if (user.isPresent()) {
             PlantIdentified plantIdentified = plantAIService.getPlantInformationByName(plantName, tokenPlant);
             plantIdentified.setUser(user.get());
+
+            String imageUrl;
+            try {
+                imageUrl = s3Service.uploadFile("plantsIdentified", img);
+            } catch (IOException e) {
+                return new GlobalHandlerResponse().handleResponse(
+                        HttpStatus.INTERNAL_SERVER_ERROR.name(),
+                        "Error uploading image to S3",
+                        HttpStatus.INTERNAL_SERVER_ERROR, request);
+            }
+            plantIdentified.setImageURL(imageUrl);
             PlantIdentifiedDTO dto = plantIdentifiedService.register(plantIdentified);
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.OK.name(),

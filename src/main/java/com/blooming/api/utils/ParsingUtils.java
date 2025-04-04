@@ -1,6 +1,8 @@
 package com.blooming.api.utils;
 
+import com.blooming.api.entity.Nursery;
 import com.blooming.api.entity.PlantIdentified;
+import com.blooming.api.entity.Pot;
 import com.blooming.api.entity.WateringPlan;
 import com.blooming.api.exception.ParsingException;
 import com.blooming.api.response.dto.*;
@@ -191,6 +193,42 @@ public class ParsingUtils {
         }
 
     }
+
+    public static NurseryDTO toNurseryDTO(Nursery nursery) {
+        try {
+            NurseryDTO dto = new NurseryDTO();
+            dto.setId(nursery.getId());
+            dto.setName(nursery.getName());
+            dto.setDescription(nursery.getDescription());
+            dto.setImageUrl(nursery.getImageUrl());
+            dto.setLatitude(nursery.getLatitude());
+            dto.setLongitude(nursery.getLongitude());
+            dto.setActive(nursery.isStatus());
+            dto.setCreatedAt(nursery.getCreatedAt());
+            dto.setUpdatedAt(nursery.getUpdatedAt());
+            return dto;
+        } catch (Exception e) {
+            throw new ParsingException(e.getMessage());
+        }
+    }
+
+    public static PotDTO toPotDTO(Pot pot) {
+        try {
+            PotDTO dto = new PotDTO();
+            dto.setId(pot.getId());
+            dto.setName(pot.getName());
+            dto.setPrice(pot.getPrice());
+            dto.setFileUrl(pot.getImageUrl());//3d file
+            dto.setOwnerId(pot.getDesigner().getId());
+            dto.setCreatedAt(pot.getCreatedAt());
+            dto.setUpdatedAt(pot.getUpdatedAt());
+            return dto;
+        } catch (Exception e) {
+            throw new ParsingException(e.getMessage());
+        }
+
+    }
+
 
     public static JsonNode getJsonNodeFromResponseBody(ResponseEntity<String> response) {
         try {

@@ -2,6 +2,8 @@ package com.blooming.api.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -17,7 +19,14 @@ public class Nursery {
     private Long id;
 
     @Column(nullable = false)
-    private String name; // Nombre del vivero
+    private String name;
+
+    @Column(nullable = false)
+    private String description;
+
+    @Getter
+    @Setter
+    private String imageUrl;
 
     @Column(nullable = false)
     private Double latitude; // Latitud del vivero
@@ -25,15 +34,18 @@ public class Nursery {
     @Column(nullable = false)
     private Double longitude; // Longitud del vivero
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "nursery_admin_id")
     private User nurseryAdmin; // Usuario con el rol de NURSERY_ADMIN
 
     @OneToMany(mappedBy = "nursery", fetch = FetchType.LAZY)
     private List<Evaluation> evaluations;
 
+    @OneToMany(mappedBy = "nursery", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<Product> products;
+
     @Column(nullable = false)
-    private boolean isActive = true;
+    private boolean status = true;
 
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")

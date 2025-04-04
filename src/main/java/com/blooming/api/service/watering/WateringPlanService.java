@@ -14,7 +14,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,11 +65,10 @@ public class WateringPlanService implements IWateringPlanService {
     }
 
     @Override
-    public WateringDay addImageToWateringDay(Long wateringDayId, MultipartFile image) {
+    public WateringDay addImageToWateringDay(Long wateringDayId, String imageUrl) {
         WateringDay wateringDay = wateringDayRepository.findById(wateringDayId)
                 .orElseThrow(() -> new EntityNotFoundException("Watering Day not found with id: " + wateringDayId));
-        //TODO: String s3ImageURL= S3Service.saveImage(...)
-        //TODO: wateringDay.setImageURL(s3ImageURL)
+        wateringDay.setImageURL(imageUrl);
         return wateringDayRepository.save(wateringDay);
     }
 

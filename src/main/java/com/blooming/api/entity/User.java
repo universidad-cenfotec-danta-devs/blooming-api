@@ -1,6 +1,7 @@
 package com.blooming.api.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
@@ -27,13 +28,32 @@ public class User implements UserDetails {
 
     @Getter
     @Setter
+    @Column(unique = true)
+    private String googleId;
+
+    @Getter
+    @Setter
     @Column(unique = true, length = 100, nullable = false)
     private String email;
 
-    @JsonIgnore
     @Setter
     @Column(nullable = false)
     private String password;
+
+    @Getter
+    @Setter
+    @Column(nullable = false)
+    private String name;
+
+    @Getter
+    @Setter
+    @Column
+    private Date dateOfBirth;
+
+    @Getter
+    @Setter
+    @Column
+    private String gender;
 
     @Getter
     @Setter
@@ -52,8 +72,10 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<Purchase> purchases;
 
+    @Setter
+    @Getter
     @Column(nullable = false)
-    private boolean isActive = true;
+    private boolean active;
 
     @Setter
     @Getter
@@ -116,4 +138,3 @@ public class User implements UserDetails {
     }
 
 }
-

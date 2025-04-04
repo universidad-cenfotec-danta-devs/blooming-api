@@ -16,4 +16,9 @@ public class HttpResponse<T> {
         this.data = data;
         this.meta = meta;
     }
+
+    public HttpResponse(String message, MetaResponse meta) {
+        this.message = message;
+        this.meta = meta;
+    }
 }

@@ -36,7 +36,7 @@ public class Pot {
     private List<Evaluation> evaluations;
 
     @Column(nullable = false)
-    private boolean isActive = true;
+    private boolean status = true;
 
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
