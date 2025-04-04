@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -40,10 +41,11 @@ public class PotController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
-    @PostMapping
-    public ResponseEntity<?> uploadPot(@Valid @RequestBody PotRequest potRequest,
-                                       @RequestParam("3dFile") MultipartFile pot3dFile,
-                                       HttpServletRequest request) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadPot(
+            @RequestPart("potRequest") @Valid PotRequest potRequest,
+            @RequestPart("3dFile") MultipartFile pot3dFile,
+            HttpServletRequest request) {
 
         String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
         Optional<User> user = userService.findByEmail(userEmail);
@@ -60,7 +62,7 @@ public class PotController {
             Pot pot = new Pot();
             pot.setName(potRequest.name());
             pot.setDescription(potRequest.description());
-            pot.setImageUrl(potUrl);//3d File
+            pot.setImageUrl(potUrl); // 3d File
             pot.setDesigner(user.get());
             pot.setPrice(potRequest.price());
 
