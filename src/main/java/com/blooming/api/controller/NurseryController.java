@@ -9,6 +9,7 @@ import com.blooming.api.request.ProductRequest;
 import com.blooming.api.response.dto.NurseryDTO;
 import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.service.nursery.INurseryService;
+import com.blooming.api.service.product.IProductService;
 import com.blooming.api.service.s3.IS3Service;
 import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
@@ -29,22 +30,40 @@ public class NurseryController {
     private final IUserService userService;
     private final IS3Service s3Service;
     private final JwtService jwtService;
+    private final IProductService productService;
 
-    public NurseryController(INurseryService nurseryService, IUserService userService, IS3Service s3Service, JwtService jwtService) {
+    public NurseryController(INurseryService nurseryService, IUserService userService, IS3Service s3Service, JwtService jwtService, IProductService productService) {
         this.nurseryService = nurseryService;
         this.userService = userService;
         this.s3Service = s3Service;
         this.jwtService = jwtService;
+        this.productService = productService;
     }
 
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN_USER')")
+    public ResponseEntity<?> getAllNurseries(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size, HttpServletRequest request
+    ){
+        return nurseryService.getAllNurseries(page, size, request);
+    }
+
+
+
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
     public ResponseEntity<?> createNursery(@Valid @RequestBody NurseryRequest nurseryRequest,
-                                           @RequestParam("img") MultipartFile img,
+//                                           @RequestParam("img") MultipartFile img,
                                            HttpServletRequest request) {
         try {
-            String imgUrl = s3Service.uploadFile("nurseries", img);
-            NurseryDTO nursery = nurseryService.createNursery(nurseryRequest, imgUrl);
+            String token = request.getHeader("Authorization").replace("Bearer ", "");
+            String userEmail = jwtService.extractUsername(token);
+            User user = userService.findByEmail(userEmail)
+                    .orElseThrow(() -> new NotFoundException("User not found with email: " + userEmail));
+//            String imgUrl = s3Service.uploadFile("nurseries", img);
+//            NurseryDTO nursery = nurseryService.createNursery(nurseryRequest, imgUrl);
+            NurseryDTO nursery = nurseryService.createNursery(nurseryRequest, user, "imgUrl");
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.OK.name(),
                     nursery,
@@ -58,7 +77,7 @@ public class NurseryController {
     }
 
     @PostMapping("addProductByNurseryAdmin")
-    @PreAuthorize("hasRole('NURSERY_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
     public ResponseEntity<?> addProductToNurseryByNurseryAdmin(
             @Valid @RequestBody ProductRequest productRequest,
             HttpServletRequest request) {
@@ -83,8 +102,27 @@ public class NurseryController {
         }
     }
 
+    @GetMapping("get-products/{idNursery}")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
+    
+    public ResponseEntity<?> getAllProductsByNurseryId(@PathVariable Long idNursery,
+                                                       @RequestParam(defaultValue = "1") int page,
+                                                       @RequestParam(defaultValue = "10") int size,
+                                                       HttpServletRequest request) {
+        try {
+            Page<ProductRequest> products = productService.getAllProductsFromNursery(idNursery, page, size);
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.OK.name(),
+                    products,
+                    HttpStatus.OK, request);
+        } catch (RuntimeException e) {
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.BAD_REQUEST.name(),
+                    HttpStatus.BAD_REQUEST, request);
+        }
+    }
+
     @GetMapping("/actives")
-    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER', 'NURSERY_USER')")
     public ResponseEntity<?> getAllActiveNurseries(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size, HttpServletRequest request) {
@@ -138,7 +176,7 @@ public class NurseryController {
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
     public ResponseEntity<?> updateNursery(@PathVariable Long id,
                                            @Valid @RequestBody NurseryUpdateRequest nurseryRequest,
                                            HttpServletRequest request) {
