@@ -37,15 +37,30 @@ public class NurseryController {
         this.jwtService = jwtService;
     }
 
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN_USER')")
+    public ResponseEntity<?> getAllProducts(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size, HttpServletRequest request
+    ){
+        return nurseryService.getAllNurseries(page, size, request);
+    }
+
+
+
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
     public ResponseEntity<?> createNursery(@Valid @RequestBody NurseryRequest nurseryRequest,
 //                                           @RequestParam("img") MultipartFile img,
                                            HttpServletRequest request) {
         try {
+            String token = request.getHeader("Authorization").replace("Bearer ", "");
+            String userEmail = jwtService.extractUsername(token);
+            User user = userService.findByEmail(userEmail)
+                    .orElseThrow(() -> new NotFoundException("User not found with email: " + userEmail));
 //            String imgUrl = s3Service.uploadFile("nurseries", img);
 //            NurseryDTO nursery = nurseryService.createNursery(nurseryRequest, imgUrl);
-            NurseryDTO nursery = nurseryService.createNursery(nurseryRequest, "imgUrl");
+            NurseryDTO nursery = nurseryService.createNursery(nurseryRequest, user, "imgUrl");
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.OK.name(),
                     nursery,
@@ -85,7 +100,6 @@ public class NurseryController {
     }
 
     @GetMapping("/actives")
-    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER', 'NURSERY_USER')")
     public ResponseEntity<?> getAllActiveNurseries(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size, HttpServletRequest request) {

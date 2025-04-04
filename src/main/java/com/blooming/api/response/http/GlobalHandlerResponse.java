@@ -27,4 +27,15 @@ public class GlobalHandlerResponse {
     public <T> ResponseEntity<HttpResponse<T>> handleResponse(String message, HttpStatus status, HttpServletRequest request) {
         return handleResponse(message, null, status, request);
     }
+
+    @ResponseBody
+    public <T> ResponseEntity<?> handleResponse(String message, T body, HttpStatus status, MetaResponse meta) {
+        if (body instanceof HttpResponse) {
+            HttpResponse<?> response = (HttpResponse<?>) body;
+            response.setMeta(meta);
+            return new ResponseEntity<>(response, status);
+        }
+        HttpResponse<T> response = new HttpResponse<>(message, body, meta);
+        return  new ResponseEntity<>(response, status);
+    }
 }
