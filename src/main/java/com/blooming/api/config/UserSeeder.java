@@ -62,6 +62,8 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
     private void createDefaultUsers() {
         createAdmin();
         simpleUser();
+        createDesigner();
+        createNurseryAdmin();
     }
 
 
@@ -100,6 +102,46 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
         superAdmin.setPassword("admin");
         superAdmin.setRole(optionalRole.get());
         userService.register(superAdmin, RoleEnum.ADMIN_USER);
+
+    }
+
+    private void createDesigner() {
+
+        Optional<Role> optionalRole = roleService.findByName(RoleEnum.DESIGNER_USER);
+        String DESIGNER_USER = "designer@gmail.com";
+        Optional<User> optionalDesigner = userService.findByEmail(DESIGNER_USER);
+
+        if (optionalRole.isEmpty() || optionalDesigner.isPresent()) {
+            return;
+        }
+        User superAdmin = new User();
+        superAdmin.setEmail(DESIGNER_USER);
+        superAdmin.setName("Admin User");
+        superAdmin.setGender("male");
+        superAdmin.setDateOfBirth(new Date());
+        superAdmin.setPassword("designer");
+        superAdmin.setRole(optionalRole.get());
+        userService.register(superAdmin, RoleEnum.DESIGNER_USER);
+
+    }
+
+    private void createNurseryAdmin() {
+
+        Optional<Role> optionalRole = roleService.findByName(RoleEnum.NURSERY_USER);
+        String NURSERY_USER = "nursery@gmail.com";
+        Optional<User> optionalDesigner = userService.findByEmail(NURSERY_USER);
+
+        if (optionalRole.isEmpty() || optionalDesigner.isPresent()) {
+            return;
+        }
+        User superAdmin = new User();
+        superAdmin.setEmail(NURSERY_USER);
+        superAdmin.setName("Nursery");
+        superAdmin.setGender("male");
+        superAdmin.setDateOfBirth(new Date());
+        superAdmin.setPassword("nursery");
+        superAdmin.setRole(optionalRole.get());
+        userService.register(superAdmin, RoleEnum.NURSERY_USER);
 
     }
 
