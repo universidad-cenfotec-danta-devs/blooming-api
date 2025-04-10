@@ -43,30 +43,37 @@ public class EvaluationController {
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER', 'NURSERY_USER')")
     public ResponseEntity<?> createEvaluationForPot(@Valid @RequestBody EvaluationRequest evaluationRequest,
                                                     HttpServletRequest request) {
-        Optional<User> user = userService.findByEmail(evaluationRequest.userEmail());
+
+        String emailToUse = getEmailToUse(evaluationRequest);
+        Optional<User> user = userService.findByEmail(emailToUse);
         if (user.isEmpty()) {
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.BAD_REQUEST.name(),
-                    "User with email " + evaluationRequest.userEmail() + " does not exist.",
+                    "User with email " + emailToUse + " does not exist.",
                     HttpStatus.BAD_REQUEST, request);
         }
+
         Pot pot = potService.getPotById(evaluationRequest.objToEvaluateId());
         EvaluationDTO evaluation = evaluationService.createEvaluation(pot, evaluationRequest, user.get());
+
         return new GlobalHandlerResponse().handleResponse(
                 HttpStatus.OK.name(),
                 evaluation,
                 HttpStatus.OK, request);
     }
 
+
     @PostMapping("/forNursery")
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER', 'NURSERY_USER')")
     public ResponseEntity<?> createEvaluationForNursery(@Valid @RequestBody EvaluationRequest evaluationRequest,
                                                         HttpServletRequest request) {
-        Optional<User> user = userService.findByEmail(evaluationRequest.userEmail());
+
+        String emailToUse = getEmailToUse(evaluationRequest);
+        Optional<User> user = userService.findByEmail(emailToUse);
         if (user.isEmpty()) {
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.BAD_REQUEST.name(),
-                    "User with email " + evaluationRequest.userEmail() + " does not exist.",
+                    "User with email " + emailToUse + " does not exist.",
                     HttpStatus.BAD_REQUEST, request);
         }
 
@@ -182,4 +189,9 @@ public class EvaluationController {
 
     }
 
+    private String getEmailToUse(EvaluationRequest evaluationRequest) {
+        return (evaluationRequest.userEmail() != null && !evaluationRequest.userEmail().isEmpty())
+                ? evaluationRequest.userEmail()
+                : "unknown_user@gmail.com";
+    }
 }
