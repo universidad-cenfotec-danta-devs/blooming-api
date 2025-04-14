@@ -16,6 +16,8 @@ public interface IEvaluationService {
 
     Page<EvaluationDTO> getAllEvaluationsByNurseryAndStatus(Nursery nursery, boolean status, int page, int size);
 
+    Page<EvaluationDTO> getAllEvaluationsByUser(User user,boolean status, int page, int size);
+
     void activate(Long evaluationId);
 
     void deactivate(Long evaluationId);

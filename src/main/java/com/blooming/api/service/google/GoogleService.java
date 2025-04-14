@@ -24,6 +24,9 @@ public class GoogleService implements IGoogleService {
     @Value("${google.client.id}")
     private String googleClientId;
 
+    @Value("${google.client.url}")
+    private String googleClientUrl;
+
     /**
      * Constructor for GoogleService.
      *
@@ -71,7 +74,7 @@ public class GoogleService implements IGoogleService {
     @Override
     public GoogleUser decryptGoogleToken(String googleToken) {
         // Send the token to Google's token info endpoint for validation
-        String url = "https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=" + googleToken;
+        String url = googleClientUrl + googleToken;
 
         ResponseEntity<GoogleUser> response = googleRestTemplate.getForEntity(url, GoogleUser.class);
 
