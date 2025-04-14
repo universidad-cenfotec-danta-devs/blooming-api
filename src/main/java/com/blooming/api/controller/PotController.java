@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,9 +48,10 @@ public class PotController {
             @RequestPart("3dFile") MultipartFile pot3dFile,
             HttpServletRequest request) {
 
-        String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
-        Optional<User> user = userService.findByEmail(userEmail);
-        if (user.isPresent()) {
+        try {
+            String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
+            User user = userService.findByEmail(userEmail).
+                    orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
             String potUrl;
             try {
                 potUrl = s3Service.uploadFile("pot", pot3dFile);
@@ -62,8 +64,8 @@ public class PotController {
             Pot pot = new Pot();
             pot.setName(potRequest.name());
             pot.setDescription(potRequest.description());
-            pot.setImageUrl(potUrl); // 3d File
-            pot.setDesigner(user.get());
+            pot.setImageUrl(potUrl);
+            pot.setDesigner(user);
             pot.setPrice(potRequest.price());
 
             PotDTO dto = potService.register(pot);
@@ -71,11 +73,12 @@ public class PotController {
                     HttpStatus.OK.name(),
                     dto,
                     HttpStatus.OK, request);
-        } else {
+
+        } catch (Exception e) {
             return new GlobalHandlerResponse().handleResponse(
-                    HttpStatus.BAD_REQUEST.name(),
-                    "",
-                    HttpStatus.BAD_REQUEST, request);
+                    HttpStatus.OK.name(),
+                    e.getMessage(),
+                    HttpStatus.OK, request);
         }
     }
 

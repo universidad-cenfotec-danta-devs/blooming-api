@@ -3,6 +3,7 @@ package com.blooming.api.repository.evaluation;
 import com.blooming.api.entity.Evaluation;
 import com.blooming.api.entity.Nursery;
 import com.blooming.api.entity.Pot;
+import com.blooming.api.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,6 +22,8 @@ public interface IEvaluationRepository extends JpaRepository<Evaluation, Long> {
     Page<Evaluation> findByNurseryAndStatus(Nursery nursery, boolean status, Pageable pageable);
 
     Page<Evaluation> findByPotAndStatus(Pot pot, boolean status, Pageable pageable);
+
+    Page<Evaluation> findByUserAndStatus(User user, boolean status, Pageable pageable);
 
     @Modifying
     @Transactional

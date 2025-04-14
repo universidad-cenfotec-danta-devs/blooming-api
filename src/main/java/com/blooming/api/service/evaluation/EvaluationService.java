@@ -55,6 +55,13 @@ public class EvaluationService implements IEvaluationService {
     }
 
     @Override
+    public Page<EvaluationDTO> getAllEvaluationsByUser(User user, boolean status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Evaluation> evaluations = evaluationRepository.findByUserAndStatus(user, status, pageable);
+        return evaluations.map(ParsingUtils::toEvaluationDTO);
+    }
+
+    @Override
     public Page<EvaluationDTO> getAllEvaluationsByPotAndStatus(Pot pot, boolean status, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Evaluation> evaluations = evaluationRepository.findByPotAndStatus(pot, status, pageable);
