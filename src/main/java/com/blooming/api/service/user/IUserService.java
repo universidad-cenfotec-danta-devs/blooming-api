@@ -5,6 +5,7 @@ import com.blooming.api.entity.User;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 public interface IUserService {
@@ -17,4 +18,5 @@ public interface IUserService {
                            String profileImageUrl);
 
     Optional<User> findByEmail(String email);
+    List<User> getNurseryUsers();
 }

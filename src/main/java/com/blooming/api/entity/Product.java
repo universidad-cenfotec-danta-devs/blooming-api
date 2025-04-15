@@ -9,6 +9,7 @@ public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+//    @GeneratedValue(strategy = GenerationType.IDENTITY) Cambiar despues
     private Long id;
 
     @Column(nullable = false)

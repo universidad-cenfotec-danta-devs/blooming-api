@@ -1,9 +1,6 @@
 package com.blooming.api.utils;
 
-import com.blooming.api.entity.Nursery;
-import com.blooming.api.entity.PlantIdentified;
-import com.blooming.api.entity.Pot;
-import com.blooming.api.entity.WateringPlan;
+import com.blooming.api.entity.*;
 import com.blooming.api.exception.ParsingException;
 import com.blooming.api.response.dto.*;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -229,6 +226,18 @@ public class ParsingUtils {
 
     }
 
+    public static ProductDTO toProductDTO(Product product) {
+        try {
+            ProductDTO dto = new ProductDTO();
+            dto.setId(product.getId());
+            dto.setName(product.getName());
+            dto.setDescription(product.getDescription());
+            dto.setPrice(product.getPrice());
+            return dto;
+        } catch (Exception e) {
+            throw new ParsingException(e.getMessage());
+        }
+    }
 
     public static JsonNode getJsonNodeFromResponseBody(ResponseEntity<String> response) {
         try {

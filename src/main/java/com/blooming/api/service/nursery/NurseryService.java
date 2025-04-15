@@ -43,6 +43,7 @@ public class NurseryService implements INurseryService {
             NurseryDTO nurseryDTO = new NurseryDTO();
             nurseryDTO.setId(nursery.getId());
             nurseryDTO.setName(nursery.getName());
+            nurseryDTO.setDescription(nursery.getDescription());
             nurseryDTO.setLongitude(nursery.getLongitude());
             nurseryDTO.setLatitude(nursery.getLatitude());
             nurseryDTO.setActive(nursery.isStatus());
@@ -159,5 +160,4 @@ public class NurseryService implements INurseryService {
         nurseryRepository.save(nursery);
         return ParsingUtils.toNurseryDTO(nursery);
     }
-
 }

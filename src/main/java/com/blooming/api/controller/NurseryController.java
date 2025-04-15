@@ -2,17 +2,21 @@ package com.blooming.api.controller;
 
 import com.amazonaws.services.kms.model.NotFoundException;
 import com.blooming.api.entity.EntityStatus;
+import com.blooming.api.entity.Nursery;
 import com.blooming.api.entity.User;
 import com.blooming.api.request.NurseryRequest;
 import com.blooming.api.request.NurseryUpdateRequest;
 import com.blooming.api.request.ProductRequest;
+import com.blooming.api.request.ProductUpdateRequest;
 import com.blooming.api.response.dto.NurseryDTO;
+import com.blooming.api.response.dto.ProductDTO;
 import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.service.nursery.INurseryService;
 import com.blooming.api.service.product.IProductService;
 import com.blooming.api.service.s3.IS3Service;
 import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
+import com.blooming.api.utils.ParsingUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -49,21 +53,27 @@ public class NurseryController {
         return nurseryService.getAllNurseries(page, size, request);
     }
 
-
-
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
     public ResponseEntity<?> createNursery(@Valid @RequestBody NurseryRequest nurseryRequest,
-//                                           @RequestParam("img") MultipartFile img,
+//                                           @RequestParam("nurseryImg") MultipartFile nurseryImg,
                                            HttpServletRequest request) {
         try {
-            String token = request.getHeader("Authorization").replace("Bearer ", "");
-            String userEmail = jwtService.extractUsername(token);
-            User user = userService.findByEmail(userEmail)
-                    .orElseThrow(() -> new NotFoundException("User not found with email: " + userEmail));
-//            String imgUrl = s3Service.uploadFile("nurseries", img);
-//            NurseryDTO nursery = nurseryService.createNursery(nurseryRequest, imgUrl);
-            NurseryDTO nursery = nurseryService.createNursery(nurseryRequest, user, "imgUrl");
+            User nurseryUser;
+            if (nurseryRequest.userEmail() == null) {
+                String token = request.getHeader("Authorization").replace("Bearer ", "");
+                String userEmail = jwtService.extractUsername(token);
+                nurseryUser = userService.findByEmail(userEmail)
+                        .orElseThrow(() -> new NotFoundException("User not found with email: " + userEmail));
+            } else {
+                nurseryUser = userService.findByEmail(nurseryRequest.userEmail()).orElseThrow(() ->
+                        new NotFoundException("User not found with email: " + nurseryRequest.userEmail()));
+            }
+//            String imgUrl = "";
+//            if (nurseryImg != null && !nurseryImg.isEmpty()) {
+//                imgUrl = s3Service.uploadFile("nurseries", nurseryImg);
+//            }
+            NurseryDTO nursery = nurseryService.createNursery(nurseryRequest, nurseryUser, "imgUrl");
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.OK.name(),
                     nursery,
@@ -99,6 +109,24 @@ public class NurseryController {
                             HttpStatus.INTERNAL_SERVER_ERROR.name(),
                             "Error processing request: " + e.getMessage(),
                             HttpStatus.INTERNAL_SERVER_ERROR, request));
+        }
+    }
+
+    @DeleteMapping("remove-product/{idProduct}")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
+    public ResponseEntity<?> removeProductFromNurseryByNurseryAdmin(@PathVariable Long idProduct, HttpServletRequest request) {
+        try {
+            productService.removeProductFromNursery(idProduct, request);
+            return ResponseEntity.ok(new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.OK.name(),
+                    "Product removed successfully",
+                    HttpStatus.OK, request));
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new GlobalHandlerResponse().handleResponse(
+                            HttpStatus.NOT_FOUND.name(),
+                            "Id not found: " + e.getMessage(),
+                            HttpStatus.NOT_FOUND, request));
         }
     }
 
@@ -175,6 +203,50 @@ public class NurseryController {
         }
     }
 
+    @GetMapping("my-nursery")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
+    public ResponseEntity<?> getMyNursery(HttpServletRequest request) {
+        try{
+            String token = request.getHeader("Authorization").replace("Bearer ", "");
+            String userEmail = jwtService.extractUsername(token);
+            User user = userService.findByEmail(userEmail)
+                    .orElseThrow(() -> new NotFoundException("User not found with email: " + userEmail));
+            Nursery nursery = nurseryService.getNurseryByNurseryAdminId(user.getId());
+            NurseryDTO nurseryDTO = ParsingUtils.toNurseryDTO(nursery);
+            return ResponseEntity.ok(new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.OK.name(),
+                    nurseryDTO,
+                    HttpStatus.OK, request));
+        } catch (RuntimeException e){
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.NOT_FOUND.name(),
+                    HttpStatus.NOT_FOUND, request);
+        }
+    }
+
+    @GetMapping("my-products")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
+    public ResponseEntity<?> getMyProducts(@RequestParam(defaultValue = "1") int page,
+                                           @RequestParam(defaultValue = "10") int size,
+                                           HttpServletRequest request) {
+        try {
+            String token = request.getHeader("Authorization").replace("Bearer ", "");
+            String userEmail = jwtService.extractUsername(token);
+            User user = userService.findByEmail(userEmail)
+                    .orElseThrow(() -> new NotFoundException("User not found with email: " + userEmail));
+            Nursery nursery = nurseryService.getNurseryByNurseryAdminId(user.getId());
+            Page<ProductRequest> products = productService.getAllProductsFromNursery(nursery.getId(), page, size);
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.OK.name(),
+                    products,
+                    HttpStatus.OK, request);
+        } catch (RuntimeException e) {
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.BAD_REQUEST.name(),
+                    HttpStatus.BAD_REQUEST, request);
+        }
+    }
+
     @PatchMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
     public ResponseEntity<?> updateNursery(@PathVariable Long id,
@@ -187,6 +259,24 @@ public class NurseryController {
                     updatedNursery,
                     HttpStatus.OK, request);
         } catch (RuntimeException e) {
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.BAD_REQUEST.name(),
+                    HttpStatus.BAD_REQUEST, request);
+        }
+    }
+
+    @PatchMapping("update-product/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
+    public ResponseEntity<?> updateMyProducts(@PathVariable Long id,
+                                              @Valid @RequestBody ProductUpdateRequest productUpdateRequest,
+                                              HttpServletRequest request) {
+        try{
+            ProductDTO updatedProduct = productService.updateProductById(id, productUpdateRequest);
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.OK.name(),
+                    updatedProduct,
+                    HttpStatus.OK, request);
+        } catch (RuntimeException e){
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.BAD_REQUEST.name(),
                     HttpStatus.BAD_REQUEST, request);
