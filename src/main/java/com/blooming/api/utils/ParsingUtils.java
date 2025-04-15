@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class ParsingUtils {
@@ -280,6 +281,20 @@ public class ParsingUtils {
                 wateringPlan.getId(),
                 wateringPlan.getPlant().getId(),
                 wateringPlan.isActive()
+        );
+    }
+
+    public static EvaluationDTO toEvaluationDTO(Evaluation savedEvaluation) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String createdAt = dateFormat.format(savedEvaluation.getCreatedAt());
+
+        String userName = savedEvaluation.getUser() != null ? savedEvaluation.getUser().getName() : "Unknown User";
+
+        return new EvaluationDTO(
+                savedEvaluation.getRating(),
+                savedEvaluation.getComment(),
+                createdAt,
+                userName
         );
     }
 }
