@@ -25,13 +25,15 @@ public class EvaluationService implements IEvaluationService {
 
     @Override
     @Transactional
-    public <T> EvaluationDTO createEvaluation(T evaluatedEntity, EvaluationRequest evaluationRequest, User user) {
+    public <T> EvaluationDTO createEvaluation(T evaluatedEntity,
+                                              EvaluationRequest evaluationRequest,
+                                              User user) {
         Evaluation evaluation;
 
         if (evaluatedEntity instanceof Pot pot) {
-            evaluation = new Evaluation(user, pot, null, evaluationRequest.rating(), evaluationRequest.comment());
+            evaluation = new Evaluation(user, pot, null, evaluationRequest.rating(), evaluationRequest.comment(), evaluationRequest.anonymous());
         } else if (evaluatedEntity instanceof Nursery nursery) {
-            evaluation = new Evaluation(user, null, nursery, evaluationRequest.rating(), evaluationRequest.comment());
+            evaluation = new Evaluation(user, null, nursery, evaluationRequest.rating(), evaluationRequest.comment(), evaluationRequest.anonymous());
         } else {
             throw new IllegalArgumentException("Invalid evaluated entity type");
         }
@@ -63,7 +65,7 @@ public class EvaluationService implements IEvaluationService {
 
     @Override
     public Page<EvaluationDTO> getAllEvaluationsByPotAndStatus(Pot pot, boolean status, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page-1, size);
         Page<Evaluation> evaluations = evaluationRepository.findByPotAndStatus(pot, status, pageable);
         return evaluations.map(ParsingUtils::toEvaluationDTO);
     }

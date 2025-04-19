@@ -63,8 +63,8 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
         createAdmin();
         simpleUser();
         unknownUser();
+        createDesigner();
     }
-
 
     private void simpleUser() {
         Optional<Role> optionalRole = roleService.findByName(RoleEnum.SIMPLE_USER);
@@ -101,6 +101,26 @@ public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
         superAdmin.setPassword("admin");
         superAdmin.setRole(optionalRole.get());
         userService.register(superAdmin, RoleEnum.ADMIN_USER);
+    }
+
+
+    private void createDesigner() {
+
+        Optional<Role> optionalRole = roleService.findByName(RoleEnum.DESIGNER_USER);
+        String DESIGNER_USER = "designer1@gmail.com";
+        Optional<User> optionalSuperAdmin = userService.findByEmail(DESIGNER_USER);
+
+        if (optionalRole.isEmpty() || optionalSuperAdmin.isPresent()) {
+            return;
+        }
+        User superAdmin = new User();
+        superAdmin.setEmail(DESIGNER_USER);
+        superAdmin.setName("Designer User");
+        superAdmin.setGender("male");
+        superAdmin.setDateOfBirth(new Date());
+        superAdmin.setPassword("user123");
+        superAdmin.setRole(optionalRole.get());
+        userService.register(superAdmin, RoleEnum.DESIGNER_USER);
     }
 
     private void unknownUser() {
