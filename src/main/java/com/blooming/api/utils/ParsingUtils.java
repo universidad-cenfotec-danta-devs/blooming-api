@@ -283,6 +283,7 @@ public class ParsingUtils {
         }
 
         return new EvaluationDTO(
+                savedEvaluation.getId(),
                 savedEvaluation.getRating(),
                 savedEvaluation.getComment(),
                 createdAt,

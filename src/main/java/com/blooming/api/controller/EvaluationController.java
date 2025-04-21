@@ -178,7 +178,7 @@ public class EvaluationController {
         return changeEvaluationStatus(evaluationId, EntityStatus.ACTIVATE, request);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN_USER')")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'NURSERY_USER')")
     @PatchMapping("/deactivate/{id}")
     public ResponseEntity<?> deactivateEvaluation(@PathVariable("id") Long evaluationId, HttpServletRequest request) {
         return changeEvaluationStatus(evaluationId, EntityStatus.DEACTIVATE, request);
