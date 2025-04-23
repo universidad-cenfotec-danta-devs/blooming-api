@@ -218,6 +218,7 @@ public class ParsingUtils {
             dto.setPrice(pot.getPrice());
             dto.setFileUrl(pot.getImageUrl());//3d file
             dto.setOwnerId(pot.getDesigner().getId());
+            dto.setOwnerName(pot.getDesigner().getName());
             dto.setCreatedAt(pot.getCreatedAt());
             dto.setUpdatedAt(pot.getUpdatedAt());
             return dto;
