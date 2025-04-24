@@ -39,7 +39,7 @@ public class UserService implements IUserService {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        Optional<Role> role = roleRepository.findByName(RoleEnum.SIMPLE_USER);
+        Optional<Role> role = roleRepository.findByName(rolAssigned);
 
         if (role.isEmpty()) {
             Map<String, String> response = new HashMap<>();

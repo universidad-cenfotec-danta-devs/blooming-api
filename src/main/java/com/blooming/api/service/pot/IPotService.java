@@ -4,8 +4,6 @@ import com.blooming.api.entity.Pot;
 import com.blooming.api.response.dto.PotDTO;
 import org.springframework.data.domain.Page;
 
-import java.util.Optional;
-
 public interface IPotService {
     PotDTO register(Pot pot);
 
@@ -13,4 +11,7 @@ public interface IPotService {
 
     Pot getPotById(Long id);
 
+    void activate(Long potId);
+
+    void deactivate(Long potId);
 }

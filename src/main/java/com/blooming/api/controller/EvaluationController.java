@@ -49,9 +49,9 @@ public class EvaluationController {
                                                     HttpServletRequest request) {
 
         try {
-            String emailToUse = getEmailToUse(evaluationRequest);
-            User user = userService.findByEmail(emailToUse).
-                    orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + emailToUse));
+            String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
+            User user = userService.findByEmail(userEmail).
+                    orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
 
             Pot pot = potService.getPotById(evaluationRequest.objToEvaluateId());
             EvaluationDTO evaluation = evaluationService.createEvaluation(pot, evaluationRequest, user);
@@ -75,9 +75,9 @@ public class EvaluationController {
                                                         HttpServletRequest request) {
 
         try {
-            String emailToUse = getEmailToUse(evaluationRequest);
-            User user = userService.findByEmail(emailToUse).
-                    orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + emailToUse));
+            String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
+            User user = userService.findByEmail(userEmail).
+                    orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
 
             Nursery nursery = nurseryService.getNurseryById(evaluationRequest.objToEvaluateId());
             EvaluationDTO evaluation = evaluationService.createEvaluation(nursery, evaluationRequest, user);
@@ -134,8 +134,8 @@ public class EvaluationController {
     @GetMapping("/pot/{potId}")
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER', 'NURSERY_USER')")
     public ResponseEntity<?> getAllEvaluationsByPotAndStatus(@PathVariable Long potId,
-                                                             @RequestParam(defaultValue = "0") int page,
-                                                             @RequestParam(defaultValue = "10") int size,
+                                                             @RequestParam(defaultValue = "1") int page,
+                                                             @RequestParam(defaultValue = "5") int size,
                                                              @RequestParam(defaultValue = "true") boolean status,
                                                              HttpServletRequest request) {
         try {
@@ -178,7 +178,7 @@ public class EvaluationController {
         return changeEvaluationStatus(evaluationId, EntityStatus.ACTIVATE, request);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN_USER')")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'NURSERY_USER')")
     @PatchMapping("/deactivate/{id}")
     public ResponseEntity<?> deactivateEvaluation(@PathVariable("id") Long evaluationId, HttpServletRequest request) {
         return changeEvaluationStatus(evaluationId, EntityStatus.DEACTIVATE, request);
@@ -208,11 +208,5 @@ public class EvaluationController {
                     HttpStatus.BAD_REQUEST, request);
         }
 
-    }
-
-    private String getEmailToUse(EvaluationRequest evaluationRequest) {
-        return (evaluationRequest.userEmail() != null && !evaluationRequest.userEmail().isEmpty())
-                ? evaluationRequest.userEmail()
-                : "unknown_user@gmail.com";
     }
 }

@@ -291,7 +291,12 @@ public class ParsingUtils {
 
         String userName = savedEvaluation.getUser() != null ? savedEvaluation.getUser().getName() : "Unknown User";
 
+        if (savedEvaluation.isAnonymous()) {
+            userName = "Anonymous user";
+        }
+
         return new EvaluationDTO(
+                savedEvaluation.getId(),
                 savedEvaluation.getRating(),
                 savedEvaluation.getComment(),
                 createdAt,
