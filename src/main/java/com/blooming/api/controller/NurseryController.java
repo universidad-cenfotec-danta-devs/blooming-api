@@ -16,14 +16,21 @@ import com.blooming.api.service.product.IProductService;
 import com.blooming.api.service.s3.IS3Service;
 import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
+import com.blooming.api.utils.PaginationUtils;
 import com.blooming.api.utils.ParsingUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/nurseries")
@@ -52,14 +59,14 @@ public class NurseryController {
         return nurseryService.getAllNurseries(page, size, request);
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
-    public ResponseEntity<?> createNursery(@Valid @RequestBody NurseryRequest nurseryRequest,
-//                                           @RequestParam("nurseryImg") MultipartFile nurseryImg,
+    public ResponseEntity<?> createNursery(@RequestPart("nurseryRequest") @Valid NurseryRequest nurseryRequest,
+                                           @RequestPart("nurseryImg") MultipartFile nurseryImg,
                                            HttpServletRequest request) {
         try {
             User nurseryUser;
-            if (nurseryRequest.userEmail() == null) {
+            if (Objects.equals(nurseryRequest.userEmail(), "")) {
                 String token = request.getHeader("Authorization").replace("Bearer ", "");
                 String userEmail = jwtService.extractUsername(token);
                 nurseryUser = userService.findByEmail(userEmail)
@@ -68,11 +75,11 @@ public class NurseryController {
                 nurseryUser = userService.findByEmail(nurseryRequest.userEmail()).orElseThrow(() ->
                         new NotFoundException("User not found with email: " + nurseryRequest.userEmail()));
             }
-//            String imgUrl = "";
-//            if (nurseryImg != null && !nurseryImg.isEmpty()) {
-//                imgUrl = s3Service.uploadFile("nurseries", nurseryImg);
-//            }
-            NurseryDTO nursery = nurseryService.createNursery(nurseryRequest, nurseryUser, "imgUrl");
+            String imgUrl = s3Service.uploadFile("nurseries", nurseryImg);
+            if (imgUrl == null) {
+                throw new IOException("Image not found");
+            }
+            NurseryDTO nursery = nurseryService.createNursery(nurseryRequest, nurseryUser, imgUrl);
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.OK.name(),
                     nursery,
@@ -91,12 +98,18 @@ public class NurseryController {
             @Valid @RequestBody ProductRequest productRequest,
             HttpServletRequest request) {
         try {
-            String token = request.getHeader("Authorization").replace("Bearer ", "");
-            String userEmail = jwtService.extractUsername(token);
-            User user = userService.findByEmail(userEmail)
-                    .orElseThrow(() -> new NotFoundException("User not found with email: " + userEmail));
+            User nurseryUser;
+            if (productRequest.userEmail() == null) {
+                String token = request.getHeader("Authorization").replace("Bearer ", "");
+                String userEmail = jwtService.extractUsername(token);
+                nurseryUser = userService.findByEmail(userEmail)
+                        .orElseThrow(() -> new NotFoundException("User not found with email: " + userEmail));
+            } else {
+                nurseryUser = userService.findByEmail(productRequest.userEmail()).orElseThrow(() ->
+                        new NotFoundException("User not found with email: " + productRequest.userEmail()));
+            }
 
-            NurseryDTO nurseryDTO = nurseryService.addProductToNursery(user.getId(), productRequest);
+            NurseryDTO nurseryDTO = nurseryService.addProductToNursery(nurseryUser.getId(), productRequest);
 
             return ResponseEntity.ok(new GlobalHandlerResponse().handleResponse(
                     HttpStatus.OK.name(),
@@ -131,17 +144,12 @@ public class NurseryController {
 
     @GetMapping("get-products/{idNursery}")
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
-    
     public ResponseEntity<?> getAllProductsByNurseryId(@PathVariable Long idNursery,
                                                        @RequestParam(defaultValue = "1") int page,
                                                        @RequestParam(defaultValue = "10") int size,
                                                        HttpServletRequest request) {
         try {
-            Page<ProductRequest> products = productService.getAllProductsFromNursery(idNursery, page, size);
-            return new GlobalHandlerResponse().handleResponse(
-                    HttpStatus.OK.name(),
-                    products,
-                    HttpStatus.OK, request);
+            return productService.getAllProductsFromNursery(idNursery, page, size, request);
         } catch (RuntimeException e) {
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.BAD_REQUEST.name(),
@@ -155,10 +163,7 @@ public class NurseryController {
             @RequestParam(defaultValue = "10") int size, HttpServletRequest request) {
         try {
             Page<NurseryDTO> nurseries = nurseryService.getAllNurseries(page, size, true);
-            return new GlobalHandlerResponse().handleResponse(
-                    HttpStatus.OK.name(),
-                    nurseries,
-                    HttpStatus.OK, request);
+            return PaginationUtils.getPaginatedResponse(nurseries, request);
         } catch (RuntimeException e) {
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.BAD_REQUEST.name(),
@@ -216,7 +221,7 @@ public class NurseryController {
                     HttpStatus.OK.name(),
                     nurseryDTO,
                     HttpStatus.OK, request));
-        } catch (RuntimeException e){
+        } catch (RuntimeException e) {
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.NOT_FOUND.name(),
                     HttpStatus.NOT_FOUND, request);
@@ -234,16 +239,22 @@ public class NurseryController {
             User user = userService.findByEmail(userEmail)
                     .orElseThrow(() -> new NotFoundException("User not found with email: " + userEmail));
             Nursery nursery = nurseryService.getNurseryByNurseryAdminId(user.getId());
-            Page<ProductRequest> products = productService.getAllProductsFromNursery(nursery.getId(), page, size);
-            return new GlobalHandlerResponse().handleResponse(
-                    HttpStatus.OK.name(),
-                    products,
-                    HttpStatus.OK, request);
+            return productService.getAllProductsFromNursery(nursery.getId(), page, size, request);
         } catch (RuntimeException e) {
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.BAD_REQUEST.name(),
                     HttpStatus.BAD_REQUEST, request);
         }
+    }
+
+    @GetMapping("nearby")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
+    public ResponseEntity<?> getNearbyNurseries(@RequestParam double userLat,
+                                                @RequestParam double userLng,
+                                                @RequestParam(required = false, defaultValue = "10") double radiusKm) {
+        List<NurseryDTO> nearbyNurseries = nurseryService.findNearby(userLat, userLng, radiusKm);
+        return ResponseEntity.ok(nearbyNurseries);
+
     }
 
     @PatchMapping("/{id}")
@@ -269,13 +280,13 @@ public class NurseryController {
     public ResponseEntity<?> updateMyProducts(@PathVariable Long id,
                                               @Valid @RequestBody ProductUpdateRequest productUpdateRequest,
                                               HttpServletRequest request) {
-        try{
+        try {
             ProductDTO updatedProduct = productService.updateProductById(id, productUpdateRequest);
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.OK.name(),
                     updatedProduct,
                     HttpStatus.OK, request);
-        } catch (RuntimeException e){
+        } catch (RuntimeException e) {
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.BAD_REQUEST.name(),
                     HttpStatus.BAD_REQUEST, request);
@@ -317,6 +328,5 @@ public class NurseryController {
                     HttpStatus.BAD_REQUEST.name(),
                     HttpStatus.BAD_REQUEST, request);
         }
-
     }
 }

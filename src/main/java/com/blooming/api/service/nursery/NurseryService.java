@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class NurseryService implements INurseryService {
@@ -40,17 +41,11 @@ public class NurseryService implements INurseryService {
         Page<Nursery> nurseryPage = nurseryRepository.findAll(pageable);
 
         for (Nursery nursery : nurseryPage.getContent()){
-            NurseryDTO nurseryDTO = new NurseryDTO();
-            nurseryDTO.setId(nursery.getId());
-            nurseryDTO.setName(nursery.getName());
-            nurseryDTO.setDescription(nursery.getDescription());
-            nurseryDTO.setLongitude(nursery.getLongitude());
-            nurseryDTO.setLatitude(nursery.getLatitude());
-            nurseryDTO.setActive(nursery.isStatus());
+            NurseryDTO nurseryDTO = ParsingUtils.toNurseryDTO(nursery);
             nurseryDTOS.add(nurseryDTO);
         }
 
-        MetaResponse meta = new MetaResponse(request.getMethod(), request.getRequestURI().toString());
+        MetaResponse meta = new MetaResponse(request.getMethod(), request.getRequestURI());
         meta.setTotalPages(nurseryPage.getTotalPages());
         meta.setTotalElements(nurseryPage.getTotalElements());
         meta.setPageNumber(nurseryPage.getNumber());
@@ -159,5 +154,26 @@ public class NurseryService implements INurseryService {
 
         nurseryRepository.save(nursery);
         return ParsingUtils.toNurseryDTO(nursery);
+    }
+
+    @Override
+    public List<NurseryDTO> findNearby(double latitude, double longitude, double radius) {
+        return nurseryRepository.findAll().stream().filter(nursery -> {
+            double distance = calculateDistance(latitude, longitude, nursery.getLatitude(), nursery.getLongitude()
+            );
+            return distance <= radius;
+        })
+        .map(ParsingUtils::toNurseryDTO).collect(Collectors.toList());
+    }
+
+    private double calculateDistance(double lat1, double lng1, double lat2, double lng2) {
+        final int R = 6371;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                Math.sin(dLng/2) * Math.sin(dLng/2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 }

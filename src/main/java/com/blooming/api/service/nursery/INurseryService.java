@@ -10,6 +10,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
+
 public interface INurseryService {
     ResponseEntity<?> getAllNurseries(int page, int size, HttpServletRequest request);
     NurseryDTO createNursery(NurseryRequest nursery, User user , String imgUrl);
@@ -21,4 +23,5 @@ public interface INurseryService {
     void activate(Long nurseryId);
     void deactivate(Long nurseryId);
     NurseryDTO addProductToNursery(Long nurseryAdminId, ProductRequest productRequest);
+    List<NurseryDTO> findNearby(double latitude, double longitude, double radius);
 }

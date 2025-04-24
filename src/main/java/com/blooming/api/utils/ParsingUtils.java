@@ -204,6 +204,7 @@ public class ParsingUtils {
             dto.setActive(nursery.isStatus());
             dto.setCreatedAt(nursery.getCreatedAt());
             dto.setUpdatedAt(nursery.getUpdatedAt());
+            dto.setUserEmail(nursery.getNurseryAdmin().getEmail());
             return dto;
         } catch (Exception e) {
             throw new ParsingException(e.getMessage());
