@@ -97,6 +97,25 @@ public class PotController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER')")
+    @GetMapping("/byDesigner")
+    public ResponseEntity<?> getPotsByDesigner(@RequestParam(defaultValue = "0") int page,
+                                               @RequestParam(defaultValue = "10") int size,
+                                               @RequestParam(defaultValue = "true") boolean status,
+                                               HttpServletRequest request) {
+        try {
+            String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
+            User designer = userService.findByEmail(userEmail).
+                    orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
+            Page<PotDTO> potPage = potService.getPotsByDesigner(designer, status, page, size);
+            return PaginationUtils.getPaginatedResponse(potPage, request);
+        } catch (RuntimeException e) {
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.BAD_REQUEST.name(),
+                    HttpStatus.BAD_REQUEST, request);
+        }
+    }
+
     @PreAuthorize("hasRole('ADMIN_USER')")
     @PatchMapping("/activate/{id}")
     public ResponseEntity<?> activatePot(@PathVariable("id") Long potId, HttpServletRequest request) {

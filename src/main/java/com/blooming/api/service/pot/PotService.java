@@ -1,6 +1,7 @@
 package com.blooming.api.service.pot;
 
 import com.blooming.api.entity.Pot;
+import com.blooming.api.entity.User;
 import com.blooming.api.repository.pot.IPotRepository;
 import com.blooming.api.response.dto.PotDTO;
 import com.blooming.api.utils.ParsingUtils;
@@ -36,8 +37,15 @@ public class PotService implements IPotService {
     @Override
     public Page<PotDTO> getAllPots(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Pot> plantsPage = potRepository.findByStatus(true, pageable);
-        return plantsPage.map(ParsingUtils::toPotDTO);
+        Page<Pot> potPage = potRepository.findByStatus(true, pageable);
+        return potPage.map(ParsingUtils::toPotDTO);
+    }
+
+    @Override
+    public Page<PotDTO> getPotsByDesigner(User designer, boolean status, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<Pot> potPage = potRepository.findByDesignerAndStatus(designer, status, pageable);
+        return potPage.map(ParsingUtils::toPotDTO);
     }
 
     @Override
