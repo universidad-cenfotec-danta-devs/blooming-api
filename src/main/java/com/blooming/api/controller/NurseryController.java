@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 
 @RestController
@@ -122,6 +121,17 @@ public class NurseryController {
                             "Error processing request: " + e.getMessage(),
                             HttpStatus.INTERNAL_SERVER_ERROR, request));
         }
+    }
+
+    @PostMapping("add-product/{idNursery}")
+    @PreAuthorize("hasAnyRole('ADMIN_USER')")
+    public ResponseEntity<?> addProductToNursery(@PathVariable Long idNursery, @RequestBody ProductRequest product){
+        try {
+            return ResponseEntity.ok(nurseryService.addProductToNurseryAsAdmin(idNursery, product));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error processing request: " + e.getMessage());
+        }
+
     }
 
     @DeleteMapping("remove-product/{idProduct}")

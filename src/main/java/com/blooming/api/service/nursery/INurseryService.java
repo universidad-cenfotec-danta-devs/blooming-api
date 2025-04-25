@@ -22,4 +22,5 @@ public interface INurseryService {
     void deactivate(Long nurseryId);
     NurseryDTO addProductToNursery(Long nurseryAdminId, ProductRequest productRequest);
     Page<NurseryDTO> findNearby(int page, int size, double latitude, double longitude, double radius);
+    NurseryDTO addProductToNurseryAsAdmin(Long idNursery, ProductRequest product);
 }

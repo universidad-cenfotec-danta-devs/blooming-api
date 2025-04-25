@@ -1,5 +1,6 @@
 package com.blooming.api.service.nursery;
 
+import com.amazonaws.services.kms.model.NotFoundException;
 import com.blooming.api.entity.Nursery;
 import com.blooming.api.entity.Product;
 import com.blooming.api.entity.User;
@@ -166,6 +167,19 @@ public class NurseryService implements INurseryService {
         })
         .map(ParsingUtils::toNurseryDTO).toList();
         return new PageImpl<>(nurseryDTOS, pageable, nurseryDTOS.size());
+    }
+
+    @Override
+    public NurseryDTO addProductToNurseryAsAdmin(Long idNursery, ProductRequest product) {
+        Product newProduct = new Product();
+        newProduct.setName(product.name());
+        newProduct.setDescription(product.description());
+        newProduct.setPrice(product.price());
+        Nursery nursery = nurseryRepository.findById(idNursery).orElseThrow(() ->
+                new NotFoundException("Nursery not found"));
+        newProduct.setNursery(nursery);
+        nursery.getProducts().add(newProduct);
+        return ParsingUtils.toNurseryDTO(nurseryRepository.save(nursery));
     }
 
     private double calculateDistance(double lat1, double lng1, double lat2, double lng2) {
