@@ -6,12 +6,16 @@ import com.blooming.api.entity.RoleEnum;
 import com.blooming.api.entity.User;
 import com.blooming.api.request.LogInRequest;
 import com.blooming.api.response.LogInResponse;
+import com.blooming.api.response.http.GlobalHandlerResponse;
 import com.blooming.api.service.google.IGoogleService;
 import com.blooming.api.service.security.AuthService;
 import com.blooming.api.service.security.JwtService;
 import com.blooming.api.service.user.IUserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,6 +60,18 @@ public class AuthController {
     public ResponseEntity<LogInResponse> authenticate(@Valid @RequestBody LogInRequest logInRequest) {
         User authenticatedUser = authService.authenticate(logInRequest.email(), logInRequest.password());
         return generateLogInResponse(authenticatedUser);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER', 'NURSERY_USER')")
+    @GetMapping("/getUser")
+    public ResponseEntity<?> getUser(HttpServletRequest request) {
+        String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
+        User user = userService.findByEmail(userEmail).
+                orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
+        return new GlobalHandlerResponse().handleResponse(
+                HttpStatus.OK.name(),
+                user,
+                HttpStatus.OK, request);
     }
 
     /**

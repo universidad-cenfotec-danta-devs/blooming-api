@@ -70,21 +70,13 @@ public class UserService implements IUserService {
     public User updateUserProfile(String userEmail,
                                   String name,
                                   Date dateOfBirth,
-                                  String gender,
-                                  String profileImageUrl) {
-        return userRepository.findByEmail(userEmail).map(user -> {
-            if (name != null && !name.trim().isEmpty()) {
-                user.setName(name);
-            }
-            if (dateOfBirth != null) {
-                user.setDateOfBirth(dateOfBirth);
-            }
-            if (gender != null && !gender.trim().isEmpty()) {
-                user.setGender(gender);
-            }
-            user.setProfileImageUrl(profileImageUrl);
-            return userRepository.save(user);
-        }).orElseThrow(() -> new EntityNotFoundException("User not found"));
+                                  String gender) {
+
+        User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new EntityNotFoundException("User " + userEmail + " not found"));
+        user.setName(name);
+        user.setDateOfBirth(dateOfBirth);
+        user.setGender(gender);
+        return userRepository.save(user);
     }
 
     @Override
