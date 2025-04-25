@@ -15,6 +15,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -23,7 +24,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class NurseryService implements INurseryService {
@@ -157,13 +157,15 @@ public class NurseryService implements INurseryService {
     }
 
     @Override
-    public List<NurseryDTO> findNearby(double latitude, double longitude, double radius) {
-        return nurseryRepository.findAll().stream().filter(nursery -> {
+    public Page<NurseryDTO> findNearby(int page, int size, double latitude, double longitude, double radius) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        List <NurseryDTO> nurseryDTOS = nurseryRepository.findNurseriesByStatus(true, pageable).stream().filter(nursery -> {
             double distance = calculateDistance(latitude, longitude, nursery.getLatitude(), nursery.getLongitude()
             );
             return distance <= radius;
         })
-        .map(ParsingUtils::toNurseryDTO).collect(Collectors.toList());
+        .map(ParsingUtils::toNurseryDTO).toList();
+        return new PageImpl<>(nurseryDTOS, pageable, nurseryDTOS.size());
     }
 
     private double calculateDistance(double lat1, double lng1, double lat2, double lng2) {

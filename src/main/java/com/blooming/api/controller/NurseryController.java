@@ -249,11 +249,13 @@ public class NurseryController {
 
     @GetMapping("nearby")
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
-    public ResponseEntity<?> getNearbyNurseries(@RequestParam double userLat,
+    public ResponseEntity<?> getNearbyNurseries(@RequestParam(defaultValue = "1") int page,
+                                                @RequestParam(defaultValue = "10") int size,
+                                                @RequestParam double userLat,
                                                 @RequestParam double userLng,
-                                                @RequestParam(required = false, defaultValue = "10") double radiusKm) {
-        List<NurseryDTO> nearbyNurseries = nurseryService.findNearby(userLat, userLng, radiusKm);
-        return ResponseEntity.ok(nearbyNurseries);
+                                                @RequestParam(required = false, defaultValue = "10") double radiusKm, HttpServletRequest request) {
+        Page<NurseryDTO> nearbyNurseries = nurseryService.findNearby(page, size, userLat, userLng, radiusKm);
+        return PaginationUtils.getPaginatedResponse(nearbyNurseries, request);
 
     }
 
