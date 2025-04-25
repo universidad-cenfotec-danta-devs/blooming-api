@@ -1,5 +1,6 @@
 package com.blooming.api.service.nursery;
 
+import com.amazonaws.services.kms.model.NotFoundException;
 import com.blooming.api.entity.Nursery;
 import com.blooming.api.entity.Product;
 import com.blooming.api.entity.User;
@@ -15,6 +16,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -35,21 +37,16 @@ public class NurseryService implements INurseryService {
 
     @Override
     public ResponseEntity<?> getAllNurseries(int page, int size, HttpServletRequest request){
-        List<NurseryDTO> nurseryDTOS = new ArrayList<NurseryDTO>();
+        List<NurseryDTO> nurseryDTOS = new ArrayList<>();
         Pageable pageable = PageRequest.of(page-1, size);
         Page<Nursery> nurseryPage = nurseryRepository.findAll(pageable);
 
         for (Nursery nursery : nurseryPage.getContent()){
-            NurseryDTO nurseryDTO = new NurseryDTO();
-            nurseryDTO.setId(nursery.getId());
-            nurseryDTO.setName(nursery.getName());
-            nurseryDTO.setLongitude(nursery.getLongitude());
-            nurseryDTO.setLatitude(nursery.getLatitude());
-            nurseryDTO.setActive(nursery.isStatus());
+            NurseryDTO nurseryDTO = ParsingUtils.toNurseryDTO(nursery);
             nurseryDTOS.add(nurseryDTO);
         }
 
-        MetaResponse meta = new MetaResponse(request.getMethod(), request.getRequestURI().toString());
+        MetaResponse meta = new MetaResponse(request.getMethod(), request.getRequestURI());
         meta.setTotalPages(nurseryPage.getTotalPages());
         meta.setTotalElements(nurseryPage.getTotalElements());
         meta.setPageNumber(nurseryPage.getNumber());
@@ -160,4 +157,39 @@ public class NurseryService implements INurseryService {
         return ParsingUtils.toNurseryDTO(nursery);
     }
 
+    @Override
+    public Page<NurseryDTO> findNearby(int page, int size, double latitude, double longitude, double radius) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        List <NurseryDTO> nurseryDTOS = nurseryRepository.findNurseriesByStatus(true, pageable).stream().filter(nursery -> {
+            double distance = calculateDistance(latitude, longitude, nursery.getLatitude(), nursery.getLongitude()
+            );
+            return distance <= radius;
+        })
+        .map(ParsingUtils::toNurseryDTO).toList();
+        return new PageImpl<>(nurseryDTOS, pageable, nurseryDTOS.size());
+    }
+
+    @Override
+    public NurseryDTO addProductToNurseryAsAdmin(Long idNursery, ProductRequest product) {
+        Product newProduct = new Product();
+        newProduct.setName(product.name());
+        newProduct.setDescription(product.description());
+        newProduct.setPrice(product.price());
+        Nursery nursery = nurseryRepository.findById(idNursery).orElseThrow(() ->
+                new NotFoundException("Nursery not found"));
+        newProduct.setNursery(nursery);
+        nursery.getProducts().add(newProduct);
+        return ParsingUtils.toNurseryDTO(nurseryRepository.save(nursery));
+    }
+
+    private double calculateDistance(double lat1, double lng1, double lat2, double lng2) {
+        final int R = 6371;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                Math.sin(dLng/2) * Math.sin(dLng/2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
 }
