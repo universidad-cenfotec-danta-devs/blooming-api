@@ -1,5 +1,6 @@
 package com.blooming.api.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
@@ -15,22 +16,26 @@ public class CartItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cart_id")
     private Cart cart;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pot_id")
-    private Pot pot;
+    @JoinColumn(name = "purchase_id")
+    private Purchase purchase;
+
+    @Column(nullable = false)
+    private String itemName;
+
+    @Column(nullable = false)
+    private CartItemTypeEnum itemType;
+
+    @Column(nullable = false)
+    private Integer price;
 
     @Column(nullable = false)
     private Integer quantity;
-
-    private boolean purchased = false;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "purchase_id")
-    private Purchase purchase;
 
     @Column(nullable = false)
     private boolean isActive = true;
