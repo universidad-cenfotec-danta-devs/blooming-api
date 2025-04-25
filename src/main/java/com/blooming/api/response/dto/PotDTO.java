@@ -10,6 +10,7 @@ import java.util.Date;
 public class PotDTO {
     Long id;
     Long ownerId;
+    String ownerName;
     String name;
     String description;
     double price;
