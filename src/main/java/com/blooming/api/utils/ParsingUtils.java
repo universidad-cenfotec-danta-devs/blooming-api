@@ -204,6 +204,7 @@ public class ParsingUtils {
             dto.setActive(nursery.isStatus());
             dto.setCreatedAt(nursery.getCreatedAt());
             dto.setUpdatedAt(nursery.getUpdatedAt());
+            dto.setUserEmail(nursery.getNurseryAdmin().getEmail());
             return dto;
         } catch (Exception e) {
             throw new ParsingException(e.getMessage());
@@ -228,6 +229,18 @@ public class ParsingUtils {
 
     }
 
+    public static ProductDTO toProductDTO(Product product) {
+        try {
+            ProductDTO dto = new ProductDTO();
+            dto.setId(product.getId());
+            dto.setName(product.getName());
+            dto.setDescription(product.getDescription());
+            dto.setPrice(product.getPrice());
+            return dto;
+        } catch (Exception e) {
+            throw new ParsingException(e.getMessage());
+        }
+    }
 
     public static JsonNode getJsonNodeFromResponseBody(ResponseEntity<String> response) {
         try {

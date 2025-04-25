@@ -25,6 +25,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -132,5 +133,21 @@ public class UserController {
                     return ResponseEntity.ok(response);
                 })
                 .orElseThrow(() -> new EntityNotFoundException("User with id " + id + " not found"));
+    }
+
+    @GetMapping("nursery-users")
+    @PreAuthorize("hasAnyRole('ADMIN_USER')")
+    public List<Map<String,String>> getNurseryUsers() {
+        List<User> nurseryUsers = userService.getNurseryUsers();
+        List<Map<String,String>> nurseryUsersResult = new ArrayList<>();
+        for (User user : nurseryUsers) {
+            HashMap<String,String> nurseryUserData = new HashMap<>();
+            nurseryUserData.put("name", user.getName());
+            nurseryUserData.put("email", user.getEmail());
+            nurseryUsersResult.add(nurseryUserData);
+        }
+
+        return nurseryUsersResult;
+
     }
 }

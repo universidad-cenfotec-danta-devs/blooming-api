@@ -17,4 +17,5 @@ public class NurseryDTO {
     private boolean active;
     private Date createdAt;
     private Date updatedAt;
+    private String userEmail;
 }
