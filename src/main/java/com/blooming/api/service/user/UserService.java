@@ -3,6 +3,8 @@ package com.blooming.api.service.user;
 import com.blooming.api.entity.*;
 import com.blooming.api.repository.role.IRoleRepository;
 import com.blooming.api.repository.user.IUserRepository;
+import com.blooming.api.service.cart.CartService;
+import com.blooming.api.service.cart.ICartService;
 import com.blooming.api.service.roleRequest.RoleRequestService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -23,12 +25,14 @@ public class UserService implements IUserService {
     private final IRoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRequestService roleRequestService;
+    private final CartService cartService;
 
-    public UserService(IUserRepository userRepository, IRoleRepository roleRepository, PasswordEncoder passwordEncoder, RoleRequestService roleRequestService) {
+    public UserService(IUserRepository userRepository, CartService cartService, IRoleRepository roleRepository, PasswordEncoder passwordEncoder, RoleRequestService roleRequestService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRequestService = roleRequestService;
+        this.cartService = cartService;
     }
 
     @Override
@@ -62,6 +66,8 @@ public class UserService implements IUserService {
 
             roleRequestService.addRoleRequest(roleRequest);
         }
+
+        cartService.createUserCart(savedUser.getId());
         return ResponseEntity.ok(savedUser);
     }
 

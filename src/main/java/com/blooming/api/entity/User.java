@@ -67,7 +67,7 @@ public class User implements UserDetails {
     @JsonIgnore
     private List<Evaluation> evaluations;
 
-    @OneToOne(mappedBy = "user")
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private Cart cart;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
