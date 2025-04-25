@@ -37,7 +37,7 @@ public class NurseryService implements INurseryService {
 
     @Override
     public ResponseEntity<?> getAllNurseries(int page, int size, HttpServletRequest request){
-        List<NurseryDTO> nurseryDTOS = new ArrayList<NurseryDTO>();
+        List<NurseryDTO> nurseryDTOS = new ArrayList<>();
         Pageable pageable = PageRequest.of(page-1, size);
         Page<Nursery> nurseryPage = nurseryRepository.findAll(pageable);
 

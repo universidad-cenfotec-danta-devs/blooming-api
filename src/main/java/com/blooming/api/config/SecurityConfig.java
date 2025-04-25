@@ -54,7 +54,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers(HttpMethod.POST, LOG_IN_SIGN_IN_URI).permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/users/updateProfile").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/nurseries/actives").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/nurseries/nearby").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/nurseries/{id}").permitAll()
                         .requestMatchers(HttpMethod.POST, EVALUATIONS_API).permitAll()
                         .requestMatchers(HttpMethod.GET, EVALUATIONS_API).permitAll()
