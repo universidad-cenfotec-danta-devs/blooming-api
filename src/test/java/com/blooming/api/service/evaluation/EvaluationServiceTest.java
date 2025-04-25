@@ -63,6 +63,7 @@ class EvaluationServiceTest {
 
         EvaluationDTO dto = evaluationService.createEvaluation(pot, request, user);
 
+        System.out.println("Evaluación de maceta registrada: " + dto.toString());
         assertEquals(POT_RATING, dto.rating());
         assertEquals(POT_COMMENT, dto.comment());
     }
@@ -78,6 +79,7 @@ class EvaluationServiceTest {
         when(evaluationRepository.save(any())).thenReturn(evaluation);
 
         EvaluationDTO dto = evaluationService.createEvaluation(nursery, request, user);
+        System.out.println("Evaluación de vivero registrada: " + dto.toString());
 
         assertEquals(NURSERY_RATING, dto.rating());
         assertEquals(NURSERY_COMMENT, dto.comment());

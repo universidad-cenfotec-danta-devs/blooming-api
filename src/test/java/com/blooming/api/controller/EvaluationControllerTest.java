@@ -71,6 +71,8 @@ class EvaluationControllerTest {
         when(evaluationService.createEvaluation(pot, req, user)).thenReturn(getMockEvaluation());
 
         ResponseEntity<?> response = evaluationController.createEvaluationForPot(req, request);
+        System.out.println("Datos de entrada: " + req.toString());
+        System.out.println("Evaluación retornada con éxito " + response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -78,6 +80,8 @@ class EvaluationControllerTest {
     void testGetEvaluationById() {
         when(evaluationService.getEvaluationById(POT_ID)).thenReturn(getMockEvaluation());
         ResponseEntity<?> response = evaluationController.getEvaluationById(POT_ID, request);
+        System.out.println("Id de evaluación " + POT_ID);
+        System.out.println("Evaluación retornada con éxito " + response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -85,6 +89,8 @@ class EvaluationControllerTest {
     void testDeactivateEvaluation() {
         doNothing().when(evaluationService).deactivate(POT_ID);
         ResponseEntity<?> response = evaluationController.deactivateEvaluation(POT_ID, request);
+        System.out.println("Id de evaluación " + POT_ID);
+        System.out.println("Evaluación retornada con éxito " + response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
