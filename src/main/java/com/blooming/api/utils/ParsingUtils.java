@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ParsingUtils {
 
@@ -303,5 +304,31 @@ public class ParsingUtils {
                 createdAt,
                 userName
         );
+    }
+
+    public static PurchaseDTO toPurchaseDTO(Purchase purchase) {
+        try {
+            PurchaseDTO dto = new PurchaseDTO();
+            dto.setId(purchase.getId());
+            dto.setUserId(purchase.getUser().getId());
+            dto.setCreatedAt(purchase.getCreatedAt());
+            dto.setUpdatedAt(purchase.getUpdatedAt());
+            dto.setTotalAmount(purchase.getTotalAmount());
+            dto.setItems(purchase.getCartItems().stream().map(ParsingUtils::toCartItemDTO).collect(Collectors.toList()));
+            dto.setActive(purchase.isActive());
+            return dto;
+        } catch (Exception e){
+            throw new ParsingException(e.getMessage());
+        }
+    }
+
+    public static CartItemDTO toCartItemDTO(CartItem cartItem) {
+        CartItemDTO dto = new CartItemDTO();
+        dto.setCartId(cartItem.getId());
+        dto.setItemName(cartItem.getItemName());
+        dto.setQuantity(cartItem.getQuantity());
+        dto.setPrice(cartItem.getPrice());
+        dto.setItemType(cartItem.getItemType());
+        return dto;
     }
 }
