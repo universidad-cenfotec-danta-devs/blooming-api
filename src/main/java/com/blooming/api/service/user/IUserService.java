@@ -13,8 +13,7 @@ public interface IUserService {
     User updateUserProfile(String userEmail,
                            String name,
                            Date dateOfBirth,
-                           String gender,
-                           String profileImageUrl);
+                           String gender);
 
     Optional<User> findByEmail(String email);
 }

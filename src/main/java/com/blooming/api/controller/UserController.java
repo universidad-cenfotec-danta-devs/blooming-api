@@ -52,23 +52,17 @@ public class UserController {
         return userService.register(user, RoleEnum.SIMPLE_USER);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER', 'NURSERY_USER')")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'ROLE_SIMPLE_USER', 'NURSERY_USER')")
     @PatchMapping("/updateProfile")
     public ResponseEntity<?> updateUserProfile(@Valid @RequestBody UserProfileUpdateRequest userProfileUpdateRequest,
-                                               @RequestParam("profileImage") MultipartFile profileImage,
                                                HttpServletRequest request) {
 
         String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
-        String imageProfileUrl = "";
         try {
-            if (profileImage != null && !profileImage.isEmpty()) {
-                imageProfileUrl = s3Service.uploadFile("user", profileImage);
-            }
             User updated = userService.updateUserProfile(userEmail,
                     userProfileUpdateRequest.name(),
                     userProfileUpdateRequest.dateOfBirth(),
-                    userProfileUpdateRequest.gender(),
-                    imageProfileUrl);
+                    userProfileUpdateRequest.gender());
             return new GlobalHandlerResponse().handleResponse(
                     HttpStatus.OK.name(),
                     updated,

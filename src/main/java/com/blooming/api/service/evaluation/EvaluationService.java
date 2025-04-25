@@ -13,6 +13,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -51,21 +52,21 @@ public class EvaluationService implements IEvaluationService {
 
     @Override
     public Page<EvaluationDTO> getAllEvaluationsByNurseryAndStatus(Nursery nursery, boolean status, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
         Page<Evaluation> evaluations = evaluationRepository.findByNurseryAndStatus(nursery, status, pageable);
         return evaluations.map(ParsingUtils::toEvaluationDTO);
     }
 
     @Override
     public Page<EvaluationDTO> getAllEvaluationsByUser(User user, boolean status, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
         Page<Evaluation> evaluations = evaluationRepository.findByUserAndStatus(user, status, pageable);
         return evaluations.map(ParsingUtils::toEvaluationDTO);
     }
 
     @Override
     public Page<EvaluationDTO> getAllEvaluationsByPotAndStatus(Pot pot, boolean status, int page, int size) {
-        Pageable pageable = PageRequest.of(page-1, size);
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
         Page<Evaluation> evaluations = evaluationRepository.findByPotAndStatus(pot, status, pageable);
         return evaluations.map(ParsingUtils::toEvaluationDTO);
     }
