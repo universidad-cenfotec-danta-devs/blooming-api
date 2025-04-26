@@ -5,6 +5,6 @@ import com.blooming.api.entity.WateringPlan;
 import java.util.List;
 
 public interface IFileGeneratorService {
-    void generateGoogleCalendarFile(List<String> wateringSchedule);
+    byte[] generateGoogleCalendarFile(List<String> wateringSchedule);
     byte[] generateWateringPlanPdf(WateringPlan wateringPlan);
 }

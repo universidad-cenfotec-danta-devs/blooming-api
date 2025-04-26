@@ -24,25 +24,17 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final String ADMIN_USER = "ADMIN_USER";
-    private final String DESIGNER_USER = "DESIGNER_USER";
-    private final String SIMPLE_USER = "SIMPLE_USER";
-    private final String NURSERY_USER = "NURSERY_USER";
-
     private final String LOG_IN_SIGN_IN_URI = "/api/users/**";
-    private final String BASE_URI_PLANT = "/api/plant";
-    private final String BASE_URI_PLANT_AI = "/api/plantAI";
-    private final String BASE_URI_WATERING_PLAN = "/api/wateringPlan";
-
+    private final String EVALUATIONS_API = "/api/evaluation/**";
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     /**
      * Constructor for SecurityConfig.
      *
-     * @param authenticationProvider    The authentication provider that handles the authentication process.
-     * @param jwtAuthenticationFilter   The filter that manages JWT-based authentication and validation.
-    */
+     * @param authenticationProvider  The authentication provider that handles the authentication process.
+     * @param jwtAuthenticationFilter The filter that manages JWT-based authentication and validation.
+     */
     public SecurityConfig(AuthenticationProvider authenticationProvider, JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.authenticationProvider = authenticationProvider;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
@@ -61,8 +53,12 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers(HttpMethod.POST, LOG_IN_SIGN_IN_URI).permitAll()
-                        .requestMatchers(HttpMethod.GET, "api/nurseries/actives").permitAll()
-                        .requestMatchers(HttpMethod.GET, "api/nurseries/{id}").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/users/updateProfile").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/nurseries/nearby").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/nurseries/{id}").permitAll()
+                        .requestMatchers(HttpMethod.POST, EVALUATIONS_API).permitAll()
+                        .requestMatchers(HttpMethod.GET, EVALUATIONS_API).permitAll()
+                        .requestMatchers(HttpMethod.PATCH, EVALUATIONS_API).permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

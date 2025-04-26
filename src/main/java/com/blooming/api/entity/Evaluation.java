@@ -20,7 +20,7 @@ public class Evaluation {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pot_id", nullable = false)
+    @JoinColumn(name = "pot_id")
     private Pot pot;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -34,7 +34,10 @@ public class Evaluation {
     private String comment;
 
     @Column(nullable = false)
-    private boolean isActive = true;
+    private boolean status = true;
+
+    @Column(nullable = false)
+    private boolean anonymous = false;
 
     @CreationTimestamp
     @Column(updatable = false, name = "created_at")
@@ -44,15 +47,16 @@ public class Evaluation {
     @Column(name = "updated_at")
     private Date updatedAt;
 
-    public Evaluation() {
-    }
-
-    public Evaluation(User user, Pot pot, Nursery nursery, int rating, String comment) {
+    public Evaluation(User user, Pot pot, Nursery nursery, int rating, String comment, boolean anonymous) {
         this.user = user;
         this.pot = pot;
         this.nursery = nursery;
         this.rating = rating;
         this.comment = comment;
+        this.anonymous = anonymous;
     }
 
+    public Evaluation() {
+
+    }
 }

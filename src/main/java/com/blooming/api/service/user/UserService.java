@@ -3,6 +3,8 @@ package com.blooming.api.service.user;
 import com.blooming.api.entity.*;
 import com.blooming.api.repository.role.IRoleRepository;
 import com.blooming.api.repository.user.IUserRepository;
+import com.blooming.api.service.cart.CartService;
+import com.blooming.api.service.cart.ICartService;
 import com.blooming.api.service.roleRequest.RoleRequestService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -11,10 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class UserService implements IUserService {
@@ -23,12 +22,14 @@ public class UserService implements IUserService {
     private final IRoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRequestService roleRequestService;
+    private final CartService cartService;
 
-    public UserService(IUserRepository userRepository, IRoleRepository roleRepository, PasswordEncoder passwordEncoder, RoleRequestService roleRequestService) {
+    public UserService(IUserRepository userRepository, CartService cartService, IRoleRepository roleRepository, PasswordEncoder passwordEncoder, RoleRequestService roleRequestService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRequestService = roleRequestService;
+        this.cartService = cartService;
     }
 
     @Override
@@ -42,7 +43,7 @@ public class UserService implements IUserService {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        Optional<Role> role = roleRepository.findByName(RoleEnum.SIMPLE_USER);
+        Optional<Role> role = roleRepository.findByName(rolAssigned);
 
         if (role.isEmpty()) {
             Map<String, String> response = new HashMap<>();
@@ -62,6 +63,8 @@ public class UserService implements IUserService {
 
             roleRequestService.addRoleRequest(roleRequest);
         }
+
+        cartService.createUserCart(savedUser.getId());
         return ResponseEntity.ok(savedUser);
     }
 
@@ -70,25 +73,22 @@ public class UserService implements IUserService {
     public User updateUserProfile(String userEmail,
                                   String name,
                                   Date dateOfBirth,
-                                  String gender,
-                                  String profileImageUrl) {
-        return userRepository.findByEmail(userEmail).map(user -> {
-            if (name != null && !name.trim().isEmpty()) {
-                user.setName(name);
-            }
-            if (dateOfBirth != null) {
-                user.setDateOfBirth(dateOfBirth);
-            }
-            if (gender != null && !gender.trim().isEmpty()) {
-                user.setGender(gender);
-            }
-            user.setProfileImageUrl(profileImageUrl);
-            return userRepository.save(user);
-        }).orElseThrow(() -> new EntityNotFoundException("User not found"));
+                                  String gender) {
+
+        User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new EntityNotFoundException("User " + userEmail + " not found"));
+        user.setName(name);
+        user.setDateOfBirth(dateOfBirth);
+        user.setGender(gender);
+        return userRepository.save(user);
     }
 
     @Override
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
+    }
+
+    @Override
+    public List<User> getNurseryUsers() {
+        return userRepository.findAllByRole_Id(RoleEnum.NURSERY_USER.ordinal());
     }
 }

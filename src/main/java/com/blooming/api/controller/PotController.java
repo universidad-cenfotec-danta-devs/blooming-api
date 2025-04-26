@@ -1,5 +1,6 @@
 package com.blooming.api.controller;
 
+import com.blooming.api.entity.EntityStatus;
 import com.blooming.api.entity.Pot;
 import com.blooming.api.entity.User;
 import com.blooming.api.request.PotRequest;
@@ -17,11 +18,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/pot")
@@ -47,9 +48,10 @@ public class PotController {
             @RequestPart("3dFile") MultipartFile pot3dFile,
             HttpServletRequest request) {
 
-        String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
-        Optional<User> user = userService.findByEmail(userEmail);
-        if (user.isPresent()) {
+        try {
+            String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
+            User user = userService.findByEmail(userEmail).
+                    orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
             String potUrl;
             try {
                 potUrl = s3Service.uploadFile("pot", pot3dFile);
@@ -62,8 +64,8 @@ public class PotController {
             Pot pot = new Pot();
             pot.setName(potRequest.name());
             pot.setDescription(potRequest.description());
-            pot.setImageUrl(potUrl); // 3d File
-            pot.setDesigner(user.get());
+            pot.setImageUrl(potUrl);
+            pot.setDesigner(user);
             pot.setPrice(potRequest.price());
 
             PotDTO dto = potService.register(pot);
@@ -71,11 +73,12 @@ public class PotController {
                     HttpStatus.OK.name(),
                     dto,
                     HttpStatus.OK, request);
-        } else {
+
+        } catch (Exception e) {
             return new GlobalHandlerResponse().handleResponse(
-                    HttpStatus.BAD_REQUEST.name(),
-                    "",
-                    HttpStatus.BAD_REQUEST, request);
+                    HttpStatus.OK.name(),
+                    e.getMessage(),
+                    HttpStatus.OK, request);
         }
     }
 
@@ -92,6 +95,63 @@ public class PotController {
                     HttpStatus.BAD_REQUEST.name(),
                     HttpStatus.BAD_REQUEST, request);
         }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER')")
+    @GetMapping("/byDesigner")
+    public ResponseEntity<?> getPotsByDesigner(@RequestParam(defaultValue = "0") int page,
+                                               @RequestParam(defaultValue = "10") int size,
+                                               @RequestParam(defaultValue = "true") boolean status,
+                                               HttpServletRequest request) {
+        try {
+            String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
+            User designer = userService.findByEmail(userEmail).
+                    orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
+            Page<PotDTO> potPage = potService.getPotsByDesigner(designer, status, page, size);
+            return PaginationUtils.getPaginatedResponse(potPage, request);
+        } catch (RuntimeException e) {
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.BAD_REQUEST.name(),
+                    HttpStatus.BAD_REQUEST, request);
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN_USER')")
+    @PatchMapping("/activate/{id}")
+    public ResponseEntity<?> activatePot(@PathVariable("id") Long potId, HttpServletRequest request) {
+        return changeEvaluationStatus(potId, EntityStatus.ACTIVATE, request);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'NURSERY_USER')")
+    @PatchMapping("/deactivate/{id}")
+    public ResponseEntity<?> deactivatePot(@PathVariable("id") Long potId, HttpServletRequest request) {
+        return changeEvaluationStatus(potId, EntityStatus.DEACTIVATE, request);
+    }
+
+    private ResponseEntity<?> changeEvaluationStatus(Long evaluationId, EntityStatus status, HttpServletRequest request) {
+        try {
+            return switch (status) {
+                case ACTIVATE -> {
+                    potService.activate(evaluationId);
+                    yield new GlobalHandlerResponse().handleResponse(
+                            HttpStatus.OK.name(),
+                            "Pot activated successfully",
+                            HttpStatus.OK, request);
+                }
+                case DEACTIVATE -> {
+                    potService.deactivate(evaluationId);
+                    yield new GlobalHandlerResponse().handleResponse(
+                            HttpStatus.OK.name(),
+                            "Pot deactivated successfully",
+                            HttpStatus.OK, request);
+                }
+            };
+        } catch (Exception e) {
+            return new GlobalHandlerResponse().handleResponse(
+                    HttpStatus.BAD_REQUEST.name(),
+                    HttpStatus.BAD_REQUEST, request);
+        }
+
     }
 
 }

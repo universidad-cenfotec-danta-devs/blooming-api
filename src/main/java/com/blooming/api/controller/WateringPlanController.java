@@ -17,16 +17,18 @@ import com.blooming.api.service.watering.WateringPlanService;
 import com.blooming.api.utils.PaginationUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 
 @RestController
@@ -51,60 +53,66 @@ public class WateringPlanController {
         this.s3Service = s3Service;
     }
 
-
-    @PreAuthorize("hasAnyRole('DESIGNER_USER', 'SIMPLE_USER')")
-    @PostMapping("/generateByUser/{id}")
-    public ResponseEntity<?> generateByUser(@PathVariable("id") Long plantId,
-                                            HttpServletRequest request) {
-        String userEmail = jwtService.extractUsername(request.getHeader("Authorization").replaceAll("Bearer ", ""));
-        return generateWateringPlan(plantId, userEmail, request);
+    @PostMapping("/generate/{id}")
+    public ResponseEntity<?> generate(@PathVariable("id") Long plantId,
+                                      HttpServletRequest request) {
+        return generateWateringPlan(plantId);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN_USER')")
-    @PostMapping("/generateByAdmin/{id}/{userEmail}")
-    public ResponseEntity<?> generateByAdmin(@PathVariable("id") Long plantId,
-                                             @PathVariable("userEmail") String userEmail,
-                                             HttpServletRequest request) {
-        return generateWateringPlan(plantId, userEmail, request);
-    }
-
-    private ResponseEntity<?> generateWateringPlan(Long plantId, String userEmail, HttpServletRequest request) {
-        Optional<User> user = userService.findByEmail(userEmail);
-        if (user.isPresent()) {
+    private ResponseEntity<byte[]> generateWateringPlan(Long plantId) {
+        try {
             PlantIdentified plantIdentified = plantIdentifiedService.getById(plantId);
             String tokenPlant = plantIdentified.getPlantToken();
 
             List<String> wateringDates = plantAIService.generateWateringDates(tokenPlant);
-            fileGeneratorService.generateGoogleCalendarFile(wateringDates);
+            byte[] calendarFile = fileGeneratorService.generateGoogleCalendarFile(wateringDates);
 
             List<WateringDayDTO> wateringDays = plantAIService.generateWateringDays(tokenPlant, wateringDates);
             WateringPlan wateringPlan = wateringPlanService.register(wateringDays, plantIdentified);
-            fileGeneratorService.generateWateringPlanPdf(wateringPlan);
+            byte[] pdfFile = fileGeneratorService.generateWateringPlanPdf(wateringPlan);
 
-            return new GlobalHandlerResponse().handleResponse(
-                    HttpStatus.OK.name(),
-                    wateringPlan,
-                    HttpStatus.OK, request);
-        } else {
-            return new GlobalHandlerResponse().handleResponse(
-                    HttpStatus.BAD_REQUEST.name(),
-                    "",
-                    HttpStatus.BAD_REQUEST, request);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try (ZipOutputStream zipOut = new ZipOutputStream(baos)) {
+                zipOut.putNextEntry(new ZipEntry("watering_schedule.ics"));
+                zipOut.write(calendarFile);
+                zipOut.closeEntry();
+
+                zipOut.putNextEntry(new ZipEntry("watering_plan.pdf"));
+                zipOut.write(pdfFile);
+                zipOut.closeEntry();
+            }
+
+            byte[] zipBytes = baos.toByteArray();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDisposition(ContentDisposition.attachment().filename("watering_files.zip").build());
+
+            return new ResponseEntity<>(zipBytes, headers, HttpStatus.OK);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(("Error: " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
         }
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
-    @GetMapping("/generatePDF/{id}")
-    public ResponseEntity<byte[]> generatePDF(@PathVariable("id") Long wateringPlanId) {
-        WateringPlan wateringPlan = wateringPlanService.getWateringPlanById(wateringPlanId);
-        byte[] pdfBytes = fileGeneratorService.generateWateringPlanPdf(wateringPlan);
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Disposition", "attachment; filename=watering_plan_" + wateringPlanId + ".pdf");
-        headers.add("Content-Type", "application/pdf");
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(pdfBytes);
+    @PreAuthorize("hasAnyRole('DESIGNER_USER', 'SIMPLE_USER', 'ADMIN_USER')")
+    @GetMapping("/download/pdf/{wateringPlanId}")
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable Long wateringPlanId) {
+        try {
+            WateringPlan wateringPlan = wateringPlanService.getWateringPlanById(wateringPlanId);
+            byte[] pdf = fileGeneratorService.generateWateringPlanPdf(wateringPlan);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDisposition(ContentDisposition.attachment().filename("watering_plan.pdf").build());
+
+            return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(("Error: " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
+        }
     }
+
 
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER')")
     @GetMapping("/getWateringPlansByUser")

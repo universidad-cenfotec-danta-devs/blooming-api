@@ -64,9 +64,10 @@ public class User implements UserDetails {
     private List<PlantIdentified> identifiedPlants;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Evaluation> evaluations;
 
-    @OneToOne(mappedBy = "user")
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private Cart cart;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)

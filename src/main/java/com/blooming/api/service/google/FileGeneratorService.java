@@ -15,28 +15,31 @@ import java.util.List;
 public class FileGeneratorService implements IFileGeneratorService {
 
     @Override
-    public void generateGoogleCalendarFile(List<String> wateringSchedule) {
-        StringBuilder calendarContent = new StringBuilder("BEGIN:VCALENDAR\nVERSION:2.0\n");
+    public byte[] generateGoogleCalendarFile(List<String> wateringSchedule) {
+        try {
+            StringBuilder calendarContent = new StringBuilder("BEGIN:VCALENDAR\nVERSION:2.0\n");
 
-        for (String date : wateringSchedule) {
-            calendarContent.append("BEGIN:VEVENT\nSUMMARY:Watering\nDTSTART:").append(formatDate(date)).append("\nDTEND:").append(formatDate(date)).append("\nEND:VEVENT\n");
-        }
-        calendarContent.append("END:VCALENDAR");
-        File icsFile = new File("watering_schedule.ics");
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(icsFile))) {
-            writer.write(calendarContent.toString());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            for (String date : wateringSchedule) {
+                calendarContent.append("BEGIN:VEVENT\nSUMMARY:Watering\nDTSTART:")
+                        .append(formatDate(date))
+                        .append("\nDTEND:")
+                        .append(formatDate(date))
+                        .append("\nEND:VEVENT\n");
+            }
+            calendarContent.append("END:VCALENDAR");
+
+            return calendarContent.toString().getBytes();
+        } catch (Exception e) {
+            throw new RuntimeException("Error while generating ICS content", e);
         }
     }
 
+    @Override
     public byte[] generateWateringPlanPdf(WateringPlan wateringPlan) {
-
         Document document = new Document();
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
         try {
-
             PdfWriter.getInstance(document, byteArrayOutputStream);
             document.open();
 
@@ -50,13 +53,15 @@ public class FileGeneratorService implements IFileGeneratorService {
                 document.add(new Paragraph("Recommendation: " + wateringDay.getRecommendation()));
                 document.add(new Paragraph("--------------------------------------------------"));
             }
+
             document.close();
 
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error while generating PDF", e);
         }
         return byteArrayOutputStream.toByteArray();
     }
+
 
     private String formatDate(String date) {
         return date.replace(" ", "T") + "Z";
