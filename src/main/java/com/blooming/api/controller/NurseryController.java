@@ -54,7 +54,7 @@ public class NurseryController {
     public ResponseEntity<?> getAllNurseries(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size, HttpServletRequest request
-    ){
+    ) {
         return nurseryService.getAllNurseries(page, size, request);
     }
 
@@ -125,7 +125,7 @@ public class NurseryController {
 
     @PostMapping("add-product/{idNursery}")
     @PreAuthorize("hasAnyRole('ADMIN_USER')")
-    public ResponseEntity<?> addProductToNursery(@PathVariable Long idNursery, @RequestBody ProductRequest product){
+    public ResponseEntity<?> addProductToNursery(@PathVariable Long idNursery, @RequestBody ProductRequest product) {
         try {
             return ResponseEntity.ok(nurseryService.addProductToNurseryAsAdmin(idNursery, product));
         } catch (Exception e) {
@@ -143,7 +143,7 @@ public class NurseryController {
                     HttpStatus.OK.name(),
                     "Product removed successfully",
                     HttpStatus.OK, request));
-        } catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new GlobalHandlerResponse().handleResponse(
                             HttpStatus.NOT_FOUND.name(),
@@ -153,7 +153,7 @@ public class NurseryController {
     }
 
     @GetMapping("get-products/{idNursery}")
-    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER', 'NURSERY_USER')")
     public ResponseEntity<?> getAllProductsByNurseryId(@PathVariable Long idNursery,
                                                        @RequestParam(defaultValue = "1") int page,
                                                        @RequestParam(defaultValue = "10") int size,
@@ -220,7 +220,7 @@ public class NurseryController {
     @GetMapping("my-nursery")
     @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
     public ResponseEntity<?> getMyNursery(HttpServletRequest request) {
-        try{
+        try {
             String token = request.getHeader("Authorization").replace("Bearer ", "");
             String userEmail = jwtService.extractUsername(token);
             User user = userService.findByEmail(userEmail)
@@ -258,7 +258,7 @@ public class NurseryController {
     }
 
     @GetMapping("nearby")
-    @PreAuthorize("hasAnyRole('ADMIN_USER', 'NURSERY_USER')")
+    @PreAuthorize("hasAnyRole('ADMIN_USER', 'DESIGNER_USER', 'SIMPLE_USER', 'NURSERY_USER')")
     public ResponseEntity<?> getNearbyNurseries(@RequestParam(defaultValue = "1") int page,
                                                 @RequestParam(defaultValue = "10") int size,
                                                 @RequestParam double userLat,

@@ -4,15 +4,17 @@ import com.blooming.api.entity.Cart;
 import com.blooming.api.entity.User;
 import com.blooming.api.repository.cart.ICartRepository;
 import com.blooming.api.repository.user.IUserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Optional;
 
 @Service
-public class CartService implements ICartService{
+public class CartService implements ICartService {
 
     private final IUserRepository userRepository;
     private final ICartRepository cartRepository;
@@ -43,6 +45,9 @@ public class CartService implements ICartService{
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
         Cart cart = cartRepository.findById(userId).get();
+        if (cart.getCartItems().isEmpty()) {
+            cart.setCartItems(new ArrayList<>());
+        }
         return ResponseEntity.ok(cart);
     }
 }
